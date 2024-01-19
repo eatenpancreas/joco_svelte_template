@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Permission {
+  id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  permission String           @unique @db.VarChar(25)
+  level      Int              @db.SmallInt
+  users      UserPermission[]
+}
+
+model User {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username    String           @unique @db.VarChar(255)
+  password    String           @db.VarChar(63)
+  jwt         String           @db.VarChar(511)
+  permissions UserPermission[]
+}
+
+model UserPermission {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String     @db.Uuid
+  permission_id String     @db.Uuid
+  permission    Permission @relation(fields: [permission_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user          User       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}

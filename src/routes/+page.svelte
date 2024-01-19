@@ -1,2 +1,9 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
+<script>
+	import SshConnectionVerifier from '$lib/components/files/SshConnectionVerifier.svelte';
+</script>
+
+<svelte:head>
+	<title>Home</title>
+</svelte:head>
+
+<SshConnectionVerifier />
