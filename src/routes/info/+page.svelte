@@ -1,39 +1,36 @@
 
 <script lang="ts">
 	import AppBounds from '$lib/components/AppBounds.svelte';
-	import SshConnectionVerifier from '$lib/components/files/SshConnectionVerifier.svelte';
 	import { Button } from '$lib/shadcn/ui/button';
+	import H1 from "$lib/components/H1.svelte";
+	import Dock from "$lib/components/Dock.svelte";
+	
+	const links = [
+		{ name: 'Svelte', url: 'https://svelte.dev/' },
+		{ name: 'Typescript', url: 'https://www.typescriptlang.org/' },
+		{ name: 'Sveltekit', url: 'https://kit.svelte.dev/' },
+		{ name: 'Prisma ORM', url: 'https://www.prisma.io/docs/orm' },
+		{ name: 'Tailwind', url: 'https://tailwindcss.com/' },
+		{ name: 'Zod', url: 'https://github.com/colinhacks/zod' },
+		{ name: 'Shadcn-svelte', url: 'https://www.shadcn-svelte.com/docs/components' },
+		{ name: 'Shadcn UI Theme generator', url: 'https://gradient.page/tools/shadcn-ui-theme-generator' },
+		{ name: 'Formsnap', url: 'https://www.formsnap.dev/docs/introduction' },
+	]
 </script>
 
 <svelte:head>
 	<title>Info</title>
 </svelte:head>
 
-<h1 class="text-3xl lg:text-6xl mb-14">
-	This project has been made using
-</h1>
-
 <AppBounds>
-	<div class="bg-gradient rounded-2xl">
-		<div class="flex flex-col gap-5 p-10 overflow-hidden bg-black/80">
-			<Button class="rounded-2xl"
-							href="https://svelte.dev/">Svelte</Button>
-			<Button class="rounded-2xl bg-accent-foreground hover:bg-accent-foreground/80"
-							href="https://www.typescriptlang.org/">Typescript</Button>
-			<Button class="rounded-2xl "
-							href="https://kit.svelte.dev/">Sveltekit</Button>
-			<Button class="rounded-2xl bg-accent-foreground hover:bg-accent-foreground/80"
-							href="https://www.prisma.io/docs/orm">Prisma ORM</Button>
-			<Button class="rounded-2xl "
-							href="https://tailwindcss.com/">Tailwind</Button>
-			<Button class="rounded-2xl bg-accent-foreground hover:bg-accent-foreground/80"
-							href="https://github.com/colinhacks/zod">Zod</Button>
-			<Button class="rounded-2xl"
-							href="https://www.shadcn-svelte.com/docs/components">Shadcn-svelte</Button>
-			<Button class="rounded-2xl bg-accent-foreground hover:bg-accent-foreground/80"
-							href="https://gradient.page/tools/shadcn-ui-theme-generator">Shadcn UI Theme generator</Button>
-			<Button class="rounded-2xl "
-							href="https://www.formsnap.dev/docs/introduction">Formsnap</Button>
+	<Dock>
+		<H1>This project has been made with:</H1>
+		<div class="grid grid-cols-3 gap-4">
+			{#each links as {url, name}, i}
+				<Button class="rounded-2xl data-[accented=true]:bg-accent-foreground data-[accented=true]:hover:bg-accent-foreground/80"
+						data-accented={i % 2 === 0? 'true' : 'false'}
+						href={url}>{name}</Button>
+			{/each}
 		</div>
-	</div>
+	</Dock>
 </AppBounds>

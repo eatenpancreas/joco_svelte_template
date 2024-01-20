@@ -8,4 +8,4 @@ export const User = z.object({
 	password: z.string().min(8).max(60),
 });
 
-export const POST = new Endpoint("/api/auth/register", 'POST', User, Auth);
+export const POST = new Endpoint("/api/auth/login", 'POST', User, Auth);

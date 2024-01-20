@@ -1,27 +1,30 @@
 <script>
     import "../app.css";
-    import { Button } from "$lib/shadcn/ui/button";
+    import * as Navbar from "$lib/components/navbar";
+    import {Person} from "radix-icons-svelte";
+    import {onMount} from "svelte";
+    import {client_auth, init_auth} from "$api/auth/auth";
+
+    onMount(() => {
+        init_auth();
+    });
+    
+    let user = "Guest";
+    
+    client_auth.subscribe((auth) => {
+        if (auth != null) { user = auth.username; }
+        else { user = "Guest"; }
+    });
 </script>
 
+<div class="bg-gradient-to-tl from-gradient_from to-gradient_to h-screen fixed w-screen -z-50"></div>
 
-<div class="bg-background h-screen fixed w-screen -z-50"></div>
-
-<div class="min-h-screen">
-    <div class="h-12 w-full bg-accent flex items-center justify-between px-4">
-        <div class="flex items-center gap-4">
-            <img src="favicon.png" alt="Main Icon" class="w-16">
-            <span class="text-foreground">
-                Minecraft Server
-            </span>
-        </div>
-        <div class="bg-primary rounded-2xl flex items-center justify-center gap-4">
-            <Button class="rounded-2xl px-8 shadow-none hover:bg-white/10" href="/">Home</Button>
-            <Button class="rounded-2xl px-8 shadow-none hover:bg-white/10" href="/admin">Admin</Button>
-            <Button class="rounded-2xl px-8 shadow-none hover:bg-white/10" href="/info">Info</Button>
-            <Button class="rounded-2xl px-8 shadow-none hover:bg-white/10" href="/profile">Profile</Button>
-        </div>
-    </div>
-    <div class="flex flex-col relative justify-center items-center text-foreground py-16">
+<div class="min-h-screen font-brevia">
+    <Navbar.Root title="Svelte Template">
+        <Navbar.Button href="/info">Info</Navbar.Button>
+        <Navbar.Button href="/profile"><Person/> {user}</Navbar.Button>
+    </Navbar.Root>
+    <div class="flex flex-col relative justify-center items-center text-foreground pb-16 pt-28">
         <slot/>
     </div>
 </div>

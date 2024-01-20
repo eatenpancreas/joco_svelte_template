@@ -1,7 +1,9 @@
 
-import { type UnknownKeysParam, z, type ZodRawShape, type ZodTypeAny } from 'zod';
+import {type UnknownKeysParam, z, type ZodRawShape, type ZodTypeAny} from 'zod';
 import { type EndpointError } from '$lib/api/EndpointError';
 import { type Result } from '$lib/api/result';
+import type {FormOptions} from "formsnap";
+import {get} from "svelte/store";
 
 export default class Endpoint
 	<IN_T extends ZodRawShape, IN_UnknownKeys extends UnknownKeysParam, IN_Catchall extends ZodTypeAny, IN_Output, IN_Input,
@@ -71,6 +73,34 @@ export default class Endpoint
 
 	error(err: EndpointError<OUT_Input>) {
 		return Response.json({ err });
+	}
+	
+	// @ts-ignore
+	formOptions(onResult: (result: Result<z.infer<typeof this.OUT>, OUT_Input | IN_Input>) => void): FormOptions<typeof this.IN> {
+		return {
+			// @ts-ignore
+			validators: this.IN,
+			onSubmit: (data) => {
+				// Data here is not in Zod format, we need to convert
+				const obj: any = {};
+				data.formData.forEach((value, key) => {
+					obj[key] = value;
+				});
+
+				const parse = this.IN.safeParse(obj);
+				if (!parse.success) {
+					return { err: parse.error };
+				}
+
+				this.fetch(obj).then(onResult);
+			},
+			onError: (e) => {
+				let message = get(e.message);
+				if (message !== undefined && typeof message === "string") {
+					onResult({err: { message }})
+				}
+			},
+		};
 	}
 	
 	constructor(

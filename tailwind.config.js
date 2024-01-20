@@ -20,6 +20,8 @@ const config = {
 				ring: "hsl(var(--ring) / <alpha-value>)",
 				background: "hsl(var(--background) / <alpha-value>)",
 				foreground: "hsl(var(--foreground) / <alpha-value>)",
+				gradient_from: "var(--gradient-from)",
+				gradient_to: "var(--gradient-to)",
 				primary: {
 					DEFAULT: "hsl(var(--primary) / <alpha-value>)",
 					foreground: "hsl(var(--primary-foreground) / <alpha-value>)"
@@ -47,7 +49,7 @@ const config = {
 				card: {
 					DEFAULT: "hsl(var(--card) / <alpha-value>)",
 					foreground: "hsl(var(--card-foreground) / <alpha-value>)"
-				}
+				},
 			},
 			borderRadius: {
 				lg: "var(--radius)",
@@ -55,7 +57,8 @@ const config = {
 				sm: "calc(var(--radius) - 4px)"
 			},
 			fontFamily: {
-				sans: [...fontFamily.sans]
+				sans: [...fontFamily.sans],
+				brevia: ["Brevia", ...fontFamily.sans],
 			}
 		}
 	},

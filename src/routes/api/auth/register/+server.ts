@@ -1,18 +1,10 @@
 import * as This from './endpoints';
 import { PrismaClient } from '@prisma/client';
-import jwt from 'jsonwebtoken';
 import { env } from '$env/dynamic/private';
-import type { Result } from '$lib/api/result';
-
-async function asyncSign(payload: string | object | Buffer, secret: jwt.Secret, options: jwt.SignOptions): Promise<Result<string, any>> {
-	return new Promise((resolve, reject) => {
-		jwt.sign(payload, secret, options, (err, token) => {
-			if (err) resolve({ err: err });
-			if (!token) resolve({ err: { message: "Token failed to be created!" } });
-			else resolve({ ok: token });
-		});
-	});
-}
+import {asyncSign} from "$lib/gen/asyncify";
+import {safeguard_async} from "$lib/api/result";
+import pkg from 'bcryptjs';
+const {genSalt, hash} = pkg;
 
 export async function POST({ url}) {
 	const data = This.POST.validateDataServer(url);
@@ -27,13 +19,28 @@ export async function POST({ url}) {
 	if (token.err) return This.POST.error(token.err);
 
 	const prisma = new PrismaClient();
-	prisma.user.create({
-		data: {
-			username: data.ok.username,
-			password: data.ok.password,
-			jwt: token.ok
-		}
-	});
+	prisma.$connect();	
 
-	return This.POST.send({ message: "User Created!", token: token.ok });
+	let u = await prisma.user.findFirst({
+		where: { username: data.ok.username }
+	})
+	
+	if (u) return This.POST.error({ message: "Username already exists!" });
+	
+	const result = await safeguard_async(async () => {
+		const salt = await genSalt();
+		const hashed = await hash(data.ok.password, salt);
+		
+		return prisma.user.create({
+			data: {
+				username: data.ok.username,
+				password: hashed,
+				jwt: token.ok
+			}
+		});
+	});
+	
+	if (result.err) { return This.POST.error(result.err); }
+
+	return This.POST.send({ message: `User ${result.ok.username} Created!`, token: result.ok.jwt, username: result.ok.username });
 }
