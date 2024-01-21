@@ -1,42 +1,14 @@
-# Joco Svelte Template
 
-npx shadcn-svelte@latest add tabs
+![Joco Svelte Template](./static/Joco-01.png)
+# Svelte Template
 
-npx prisma
+## STARTING OUT
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
+Either clone this repo and install dependencies or use the `pan` cli to initialise it.
+Make sure you have a postgres DB running, the `.env` variables are properly set.
 
-## Creating a project
+## USEFUL COMMANDS
+Make sure the commands using npx are installed
 
-If you're seeing this, you've probably already done this step. Congrats!
-
-```bash
-# create a new project in the current directory
-npm create svelte@latest
-
-# create a new project in my-app
-npm create svelte@latest my-app
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+* `npx shadcn-svelte@latest add COMPONENT` - adds a component from [Shadcn-svelte](https://www.shadcn-svelte.com/docs/theming).
+* `npx prisma` - uses the Prisma CLI to interact with and update the database
