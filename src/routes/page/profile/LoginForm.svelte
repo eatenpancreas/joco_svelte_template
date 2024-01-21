@@ -27,7 +27,7 @@
     <Form.Field {config} name="username">
         <Form.Item>
             <Form.Label>Username</Form.Label>
-            <Form.Input name="username" placeholder="Username..." class="rounded-2xl"/>
+            <Form.Input name="username" placeholder="Username..." class="rounded-xl"/>
             <Form.Description />
             <Form.Validation />
         </Form.Item>
@@ -35,10 +35,10 @@
     <Form.Field {config} name="password">
         <Form.Item>
             <Form.Label>Password</Form.Label>
-            <Form.Input name="password" placeholder="Password..." type="password" class="rounded-2xl"/>
+            <Form.Input name="password" placeholder="Password..." type="password" class="rounded-xl"/>
             <Form.Description />
             <Form.Validation />
         </Form.Item>
     </Form.Field>
-    <Form.Button class="w-full rounded-2xl">Submit</Form.Button>
+    <Form.Button class="w-full rounded-xl">Submit</Form.Button>
 </Form.Root>

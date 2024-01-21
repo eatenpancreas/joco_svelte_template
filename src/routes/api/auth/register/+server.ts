@@ -11,7 +11,7 @@ export async function POST({ url}) {
 	if (data.err) { return This.POST.error(data.err); }
 	
 	const secret = env.JWT_SECRET;
-	if (!secret) return This.POST.error({ message: "Environments are not correct!" });
+	if (!secret) return This.POST.errorMsg("Environments are not correct!", "env_not_correct");
 	
 	const token = await asyncSign({ username: data.ok.username, password: data.ok.password }, 
 		secret, { expiresIn: '10h' });
@@ -19,13 +19,13 @@ export async function POST({ url}) {
 	if (token.err) return This.POST.error(token.err);
 
 	const prisma = new PrismaClient();
-	prisma.$connect();	
+	This.POST.dbInit(prisma);
 
 	let u = await prisma.user.findFirst({
 		where: { username: data.ok.username }
 	})
 	
-	if (u) return This.POST.error({ message: "Username already exists!" });
+	if (u) return This.POST.errorMsg("Username already exists!", "username_exists");
 	
 	const result = await safeguard_async(async () => {
 		const salt = await genSalt();

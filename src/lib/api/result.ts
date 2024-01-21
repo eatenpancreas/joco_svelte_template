@@ -4,6 +4,11 @@ import { type EndpointError } from '$lib/api/EndpointError';
 export type Result<T, E> = { err: EndpointError<E>, ok?: undefined } | { ok: T, err?: undefined };
 
 
+export function errMsg<T, E>(message: string, id: string, location?: string): Result<T, E> {
+    return { err: { message, id, location } };
+}
+
+
 export function is_exception(unsafe_operation: () => any) {
     try { unsafe_operation(); return false; } 
     catch (e) { return true; }
@@ -24,11 +29,11 @@ export async function safeguard_async<T, E>(unsafe_operation: () => Promise<T>):
     catch (e: any) { return handle_err(e); }
 }
 
-function handle_err(e: any): {err: {message: string}} {
+export function handle_err(e: any): Result<any, any> {
     if (e.message != undefined && typeof e.message === "string") {
-        return { err: { message: e.message } }
+        return errMsg(e.message, "unk")
     } else {
-        try { return { err: { message: "An undefined error occurred! On " + JSON.stringify(e) } } }
-        catch { return { err: { message: "An undefined error occurred! ???" } } }
+        try { return errMsg("An undefined error occurred!", "unk", JSON.stringify(e)) }
+        catch { return errMsg("An undefined error occurred! ???", "unk") }
     }
 }

@@ -4,6 +4,7 @@
 	import {onMount} from "svelte";
 	import Dock from "$lib/components/Dock.svelte";
 	import AppBounds from "$lib/components/AppBounds.svelte";
+	import Image from "svimg/Image.svelte";
 	
 	let message = "";
 	onMount(async () => {
@@ -14,10 +15,10 @@
 </script>
 
 <svelte:head>
-	<title>Joco</title>
+	<title>Svelte Template - Joco</title>
 </svelte:head>
 
-<img src="Joco-02.png" alt="Joco">
+<Image src="Joco-02.png" alt="Joco" class="w-full"/>
 
 <AppBounds>
 	<Dock>

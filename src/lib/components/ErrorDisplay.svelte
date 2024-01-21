@@ -7,7 +7,7 @@
 
 {#if error}
 	<div class="absolute top-0 pt-8">
-		<Alert.Root variant="destructive" class="bg-primary-foreground rounded-2xl">
+		<Alert.Root variant="destructive" class="bg-primary-foreground rounded-xl">
 			<ExclamationTriangle class="h-4 w-4" />
 			<Alert.Title>{title}</Alert.Title>
 			<Alert.Description>{error}</Alert.Description>

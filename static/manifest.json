@@ -1,0 +1,20 @@
+{
+  "name": "Joco Svelte Template",
+  "short_name": "SvelteTemplate",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fffcdc",
+  "description": "A beautiful rich front- and backend for svelte, opinionated and ready to go.",
+  "icons": [
+    {
+      "src": "Joco-02.png",
+      "sizes": "1948x721",
+      "type": "image/png"
+    },
+    {
+      "src": "favicon.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    }
+  ]
+}

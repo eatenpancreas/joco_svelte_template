@@ -1,7 +1,7 @@
 
-import { type Result } from '$lib/api/result';
+import {errMsg, type Result} from '$lib/api/result';
 
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason) => {
 	const err = reason as Error;
 	console.error('Unhandled Rejection:', err.message);
 });
@@ -9,7 +9,7 @@ process.on('unhandledRejection', (reason, promise) => {
 export default function<T, E> (max_execution_time: number, timeout_function: () => Promise<T>): Promise<Result<T, E>> {
 	return new Promise(resolve => {
 		const timeout = setTimeout(() => {
-			resolve({ err: { message: "Timed out at " + max_execution_time + " MS." } });
+			resolve( errMsg("Timed out at" + max_execution_time + " MS.", "timeout"));
 		}, max_execution_time);
 
 		try {
@@ -18,7 +18,7 @@ export default function<T, E> (max_execution_time: number, timeout_function: () 
 				resolve({ ok: v });
 			});
 		} catch {
-			resolve({ err: { message: "There was a connection error between the servers!" }});
+			resolve( errMsg("Timed out at" + max_execution_time + " MS.", "timeout"));
 		}
 	});
 }

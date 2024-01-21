@@ -12,19 +12,19 @@ export async function POST({ url}) {
 	if (data.err) { return This.POST.error(data.err); }
 	
 	const secret = env.JWT_SECRET;
-	if (!secret) return This.POST.error({ message: "Environments are not correct!" });
+	if (!secret) return This.POST.errorMsg("Environments are not correct!", "env_not_correct");
 
 	const prisma = new PrismaClient();
-	prisma.$connect();
+	This.POST.dbInit(prisma);
 	
 	const u = await prisma.user.findFirst({
 		where: { username: data.ok.username }
 	});
 	
-	if (u == null) return This.POST.error({ message: "User does not exist!" });
+	if (u == null) return This.POST.errorMsg("User does not exist!", "user_does_not_exist");
 
 	const pass_is_correct = await compare(data.ok.password, u.password);
-	if (!pass_is_correct) return This.POST.error({ message: "Password is incorrect!" });
+	if (!pass_is_correct) return This.POST.errorMsg("Password is incorrect!", "password_incorrect");
 	
 	const token_verify = safeguard(() => jwt.verify(u.jwt, secret));
 	if (token_verify.err) {

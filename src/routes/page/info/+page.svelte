@@ -19,15 +19,15 @@
 </script>
 
 <svelte:head>
-	<title>Info</title>
+	<title>Svelte Template - Info</title>
 </svelte:head>
 
 <AppBounds>
 	<Dock>
 		<H1>This project has been made with:</H1>
-		<div class="grid grid-cols-3 gap-4">
+		<div class="grid sm:grid-cols-3 gap-4">
 			{#each links as {url, name}, i}
-				<Button class="rounded-2xl data-[accented=true]:bg-accent-foreground data-[accented=true]:hover:bg-accent-foreground/80"
+				<Button class="rounded-xl data-[accented=true]:bg-accent-foreground data-[accented=true]:hover:bg-accent-foreground/80"
 						data-accented={i % 2 === 0? 'true' : 'false'}
 						href={url}>{name}</Button>
 			{/each}
