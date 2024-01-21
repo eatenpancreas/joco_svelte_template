@@ -1,15 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import {type UnknownKeysParam, z, type ZodRawShape, type ZodTypeAny} from 'zod';
 import {type EndpointError} from '$lib/api/EndpointError';
 import {errMsg, handle_err, type Result} from '$lib/api/result';
 import type {FormOptions} from "formsnap";
 import {get} from "svelte/store";
-import {client_auth} from "$api/auth/client_auth";
+import {client_auth} from "$api/auth";
 
-type DBClient = {
-	$connect: () => void,
-	$disconnect: () => void,
-}
 
 /**
  * A wrapper around an endpoint, used by the client to communicate with the server, and vice versa
@@ -23,7 +20,7 @@ type DBClient = {
  * @example ```ts
  * import Endpoint from '$lib/api/Endpoint';
  * import { z } from "zod";
- * import {ClientAuth} from "$api/auth/client_auth";
+ * import {ClientAuth} from "$api/auth/index";
  * 
  * export const User = z.object({
  * 	username: z.string().min(2).max(255),
@@ -99,7 +96,6 @@ export default class Endpoint
 	 * 
 	 */
 	send(out: z.infer<typeof this.OUT>) {
-		this.client?.$disconnect();
 		const parsed = this.OUT.safeParse(out);
 		if (parsed.success) return Response.json( { ok: parsed.data });
 		else return Response.json( { err: { message: "Invalid output", zod_error: parsed.error, id: "invalid_output_in_send" }});
@@ -112,7 +108,6 @@ export default class Endpoint
 	 * @param out Unvalidated data to send to the client
 	 */
 	trySend(out: unknown) {
-		this.client?.$disconnect();
 		const parsed = this.OUT.safeParse(out);
 		if (parsed.success) return Response.json( { ok: parsed.data });
 		else return Response.json( { err: { message: "Invalid output", zod_error: parsed.error, id: "invalid_output_in_trySend" }});
@@ -125,7 +120,6 @@ export default class Endpoint
 	 * @param out Unvalidated data to send to the client
 	 */
 	blindSend(out: unknown) {
-		this.client?.$disconnect();
 		return Response.json({ ok: out });
 	}
 
@@ -134,7 +128,6 @@ export default class Endpoint
 	 * @param err The error to send to the client
 	 */
 	error(err: EndpointError<OUT_Input>) {
-		this.client?.$disconnect();
 		return Response.json({ err });
 	}
 	
@@ -143,7 +136,6 @@ export default class Endpoint
 	 * 
 	 */
 	errorMsg(message: string, id: string) {
-		this.client?.$disconnect();
 		return Response.json(errMsg(message, id));
 	}
 	
@@ -151,14 +143,14 @@ export default class Endpoint
 	 * Generates a form options object for use with formsnap
 	 * @param onResult The function to call when the form is submitted
 	 */
-	// @ts-ignore
+	// @ts-expect-error/in_type_is_valid
 	formOptions(onResult: (result: Result<z.infer<typeof this.OUT>, OUT_Input | IN_Input>) => void): FormOptions<typeof this.IN> {
 		return {
 			warnings: {
 				noValidationAndConstraints: false,
 			},
 			id: "form-to-endpoint-" + this.method + "-at-" + this.url,
-			// @ts-ignore
+			// @ts-expect-error/in_type_is_valid
 			validators: this.IN,
 			
 			onSubmit: (data) => {
@@ -176,24 +168,12 @@ export default class Endpoint
 				this.fetch(obj).then(onResult);
 			},
 			onError: (e) => {
-				let message = get(e.message);
+				const message = get(e.message);
 				if (message !== undefined && typeof message === "string") {
 					onResult(errMsg(message, "form_error"));
 				}
 			},
 		};
-	}
-	
-	client: DBClient | null = null;
-	
-	/**
-	 * Initializes the endpoint with a database client
-	 * This should always be called before using a database client
-	 * @param client The database client to initialize the endpoint with
-	 */
-	dbInit(client: DBClient) {
-		client.$connect();
-		this.client = client;
 	}
 	
 	constructor(

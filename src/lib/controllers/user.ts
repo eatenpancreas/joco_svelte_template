@@ -16,7 +16,7 @@ export async function userWithPermissions(prisma: PrismaClient, username: string
         } }
     });
     
-    if (u == null) return { err: { message: "Username does not exist!"} };
+    if (u == null) return { err: { message: "Username does not exist!", id: "username_does_not_exist"} };
     
     const permissions = u.permissions.map(p => { 
         return { permission: p.permission.permission, level: p.permission.level }});

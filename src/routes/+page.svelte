@@ -5,6 +5,8 @@
 	import Dock from "$lib/components/Dock.svelte";
 	import AppBounds from "$lib/components/AppBounds.svelte";
 	import Image from "svimg/Image.svelte";
+	import { env } from '$env/dynamic/public';
+	import Meta from '$lib/components/Meta.svelte';
 	
 	let message = "";
 	onMount(async () => {
@@ -14,9 +16,7 @@
 	})
 </script>
 
-<svelte:head>
-	<title>Svelte Template - Joco</title>
-</svelte:head>
+<Meta pageTitle="Joco"/>
 
 <Image src="Joco-02.png" alt="Joco" class="w-full"/>
 

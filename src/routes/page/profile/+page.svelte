@@ -6,11 +6,13 @@
 	import RegisterForm from "./RegisterForm.svelte";
 	import type {SuperValidated} from "sveltekit-superforms";
 	import Dock from "$lib/components/Dock.svelte";
-	import {client_auth} from "$api/auth/client_auth";
+	import {client_auth} from "$api/auth";
 	import LoginForm from "./LoginForm.svelte";
 	import H1 from "$lib/components/H1.svelte";
 	import {Button} from "$lib/shadcn/ui/button";
 	import Image from "svimg/Image.svelte";
+	import { env } from '$env/dynamic/public';
+	import Meta from '$lib/components/Meta.svelte';
 
 	export let register_form: SuperValidated<typeof Register.User>;
 	export let login_form: SuperValidated<typeof Login.User>;
@@ -24,9 +26,7 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Svelte Template - {title}</title>
-</svelte:head>
+<Meta pageTitle={title}/>
 
 <AppBounds>
 	{#if $client_auth != null}

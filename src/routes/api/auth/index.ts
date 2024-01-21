@@ -17,3 +17,7 @@ export const ClientAuth = z.object({
     username: z.string(),
     token: z.string(),
 });
+
+export const Username = z.object({
+    username: z.string(),
+});

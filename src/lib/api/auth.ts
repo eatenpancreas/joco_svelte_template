@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import type {RequiredAuths} from './auth.d';
 import jwt from "jsonwebtoken";
 import {env} from "$env/dynamic/private";

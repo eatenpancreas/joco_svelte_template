@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import jwt from "jsonwebtoken";
 import type {Result} from "$lib/api/result";
 

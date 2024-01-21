@@ -3,7 +3,6 @@
     import * as Popover from "$lib/shadcn/ui/popover";
     import {onMount, setContext} from "svelte";
     import {writable} from "svelte/store";
-    import {Button} from "$lib/shadcn/ui/button";
     import Hoverable from "$lib/components/Hoverable.svelte";
     import Image from "svimg/Image.svelte";
 
@@ -75,5 +74,7 @@
 </div>
 
 {#if !opened}
-    <Hoverable class="h-10 w-full fixed z-10" {open}/>
+    <Hoverable class="h-10 w-full fixed z-10 flex items-start justify-center" {open}>
+        <div class="h-[10%] w-44 bg-foreground rounded-xl mt-2"/>
+    </Hoverable>
 {/if}

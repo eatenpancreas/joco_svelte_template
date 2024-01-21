@@ -4,11 +4,17 @@
   "start_url": ".",
   "display": "standalone",
   "background_color": "#fffcdc",
+  "theme_color": "#d9a6c9",
   "description": "A beautiful rich front- and backend for svelte, opinionated and ready to go.",
   "icons": [
     {
       "src": "Joco-02.png",
       "sizes": "1948x721",
+      "type": "image/png"
+    },
+    {
+      "src": "Joco-03.png",
+      "sizes": "512x512",
       "type": "image/png"
     },
     {
