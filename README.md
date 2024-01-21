@@ -1,4 +1,4 @@
-# create-svelte
+# Joco Svelte Template
 
 npx shadcn-svelte@latest add tabs
 
