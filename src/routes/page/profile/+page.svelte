@@ -14,13 +14,13 @@
 
 	export let register_form: SuperValidated<typeof Register.User>;
 	export let login_form: SuperValidated<typeof Login.User>;
-	let title = "Profile";
+	let title = $client_auth?.username ?? "Login / Register";
 	
 	function onAuthenticate({token, username}: {message: string, token: string, username: string}) {
 		localStorage.setItem("jwt", token);
 		localStorage.setItem("username", username);
 		client_auth.set({ jwt: token, username });
-		title = "Profile - " + username;
+		title = username;
 	}
 </script>
 
