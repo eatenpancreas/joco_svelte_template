@@ -11,7 +11,6 @@
 	import H1 from "$lib/components/H1.svelte";
 	import {Button} from "$lib/shadcn/ui/button";
 	import Image from "svimg/Image.svelte";
-	import { env } from '$env/dynamic/public';
 	import Meta from '$lib/components/Meta.svelte';
 
 	export let register_form: SuperValidated<typeof Register.User>;
@@ -23,6 +22,13 @@
 		localStorage.setItem("username", username);
 		client_auth.set({ jwt: token, username });
 		title = username;
+
+
+		const queryParams = new URLSearchParams(window.location.search);
+		const from = queryParams.get("from");
+		if (from != null) {
+			window.location.href= from;
+		}
 	}
 </script>
 

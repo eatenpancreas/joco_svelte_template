@@ -57,5 +57,5 @@ export async function GET({ url, request}) {
     
     let is_end = false;
     if (users.ok.length + (data.ok.offset ?? 0) >= users_count.ok) { is_end = true; }
-    return This.send({ users: users.ok, message, is_end });
+    return This.send({ users: users.ok, message, is_end, total: users_count.ok });
 }

@@ -21,6 +21,7 @@ export const GET = new Endpoint(
 	"/api/crud/user", 'GET',
 	ListOptions, z.object({
 		users: z.array(z.intersection(Username, z.object({ id: z.string() }))),
+		total: z.number(),
 		is_end: z.boolean(),
 		message: z.string(),
 	})

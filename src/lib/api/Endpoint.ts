@@ -63,7 +63,16 @@ export default class Endpoint
 				return errMsg(`HTTP ${response.status} ${response.statusText} in ${this.method} ${this.url}`, "HTTP_" + response.status);
 			
 			const json = await response.json();
-			if (json.err) { return { err: json.err }; }	
+			if (json.err) {
+				if (json.err.message === "jwt expired") {
+					client_auth.set(null);
+					if (window.location.pathname !== "/page/profile") {
+						const from = window.location.pathname + window.location.search;
+						window.location.href = "/page/profile?from=" + encodeURIComponent(from);
+					}
+				}
+				return { err: json.err }; 
+			}	
 			
 			const parsed = this.OUT.safeParse(json.ok);
 			if (parsed.success) return { ok: parsed.data };
