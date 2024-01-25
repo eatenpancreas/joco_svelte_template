@@ -6,7 +6,7 @@
     export {className as class}
 </script>
 
-<button on:click={open} class={className} on:mouseenter={open} 
+<button on:click={open} class={className} on:mouseenter={open} name="popup field"
 >
     <slot/>
 </button>

@@ -24,6 +24,10 @@ export async function POST({ url}) {
 	const pass_is_correct = await compare(data.ok.password, u.password);
 	if (!pass_is_correct) return This.errorMsg("Password is incorrect!", "password_incorrect");
 	
+	if (safeguard(() => prisma.unverifiedUser.findFirst({ where: { user_id: u.id } })).ok) {
+		return This.errorMsg("User is not verified!", "user_not_verified");
+	}
+	
 	const token_verify = safeguard(() => jwt.verify(u.jwt, secret));
 	if (token_verify.err) {
 		const token = await asyncSign({ username: data.ok.username, password: data.ok.password },

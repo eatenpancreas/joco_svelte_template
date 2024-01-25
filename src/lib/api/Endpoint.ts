@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import {type UnknownKeysParam, z, type ZodRawShape, type ZodTypeAny} from 'zod';
+import { type UnknownKeysParam, z, type ZodRawShape, ZodType, type ZodTypeAny } from 'zod';
 import {type EndpointError} from '$lib/api/EndpointError';
 import {errMsg, handle_err, type Result} from '$lib/api/result';
-import type {FormOptions} from "formsnap";
+import type { FormOptions } from 'formsnap';
 import {get} from "svelte/store";
 import {client_auth} from "$api/auth";
 
@@ -45,7 +45,7 @@ export default class Endpoint
 			const url = new URL(this.url, window.location.origin);
 			
 			const query = new URLSearchParams();
-			query.set("endpoint_json_data", JSON.stringify(data));
+			query.set("endpoint_json_data", encodeURIComponent(JSON.stringify(data)));
 			
 			url.search = query.toString();
 
@@ -91,7 +91,7 @@ export default class Endpoint
 		const data = url.searchParams.get("endpoint_json_data");
 		if (!data) return errMsg("No data", "no_data_in_validateDataServer");
 
-		const parsed = this.IN.safeParse(JSON.parse(data));
+		const parsed = this.IN.safeParse(JSON.parse(decodeURIComponent(data)));
 
 		if (parsed.success) return { ok: parsed.data };
 		else return { err: { message: "Invalid input", zod_error: parsed.error, id: "invalid_input_in_validateDataServer" } };
@@ -151,16 +151,19 @@ export default class Endpoint
 	/**
 	 * Generates a form options object for use with formsnap
 	 * @param onResult The function to call when the form is submitted
+	 * @param schema The schema to validate
 	 */
 	// @ts-expect-error/in_type_is_valid
-	formOptions(onResult: (result: Result<z.infer<typeof this.OUT>, OUT_Input | IN_Input>) => void): FormOptions<typeof this.IN> {
+	formOptions<T extends ZodType>(onResult: (result: Result<z.infer<typeof this.OUT>, OUT_Input | IN_Input>) => void, schema: T): FormOptions<T> {
+		
 		return {
 			warnings: {
 				noValidationAndConstraints: false,
 			},
 			id: "form-to-endpoint-" + this.method + "-at-" + this.url,
-			// @ts-expect-error/in_type_is_valid
-			validators: this.IN,
+			// @ts-expect-error Validators are true
+			validators: schema,
+			dataType: "json",	
 			
 			onSubmit: (data) => {
 				// Data here is not in Zod format, we need to convert
@@ -169,7 +172,7 @@ export default class Endpoint
 					obj[key] = value;
 				});
 
-				const parse = this.IN.safeParse(obj);
+				const parse = schema.safeParse(obj);
 				if (!parse.success) {
 					return { err: parse.error };
 				}

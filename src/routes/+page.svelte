@@ -18,7 +18,7 @@
 
 <Meta pageTitle="Joco"/>
 
-<Image src="Joco-02.png" alt="Joco" class="w-full"/>
+<img src="/Joco-02.svg" alt="Joco" class="w-full"/>
 
 <AppBounds>
 	<Dock>

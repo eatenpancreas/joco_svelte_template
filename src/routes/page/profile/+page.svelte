@@ -10,25 +10,21 @@
 	import LoginForm from "./LoginForm.svelte";
 	import H1 from "$lib/components/H1.svelte";
 	import {Button} from "$lib/shadcn/ui/button";
-	import Image from "svimg/Image.svelte";
 	import Meta from '$lib/components/Meta.svelte';
+	import insert_auth from './insert_auth';
 
 	export let register_form: SuperValidated<typeof Register.User>;
 	export let login_form: SuperValidated<typeof Login.User>;
 	let title = $client_auth?.username ?? "Login / Register";
+	let supertitle: string | undefined;
 	
-	function onAuthenticate({token, username}: {message: string, token: string, username: string}) {
-		localStorage.setItem("jwt", token);
-		localStorage.setItem("username", username);
-		client_auth.set({ jwt: token, username });
-		title = username;
-
-
-		const queryParams = new URLSearchParams(window.location.search);
-		const from = queryParams.get("from");
-		if (from != null) {
-			window.location.href= from;
+	function onAuthenticate({token, username, message}: {message: string, token?: string, username?: string}) {
+		if (!token || !username) {
+			supertitle = message;
+			return;
 		}
+		
+		insert_auth({ token, username });
 	}
 </script>
 
@@ -52,11 +48,12 @@
 					<Tabs.Trigger class="rounded-xl" value="register">Register</Tabs.Trigger>
 				</Tabs.List>
 				<Tabs.Content value="register">
-					<Image src="/Joco-02.png" alt="Joco" class="w-full"/>
-					<RegisterForm form={register_form} {onAuthenticate}/>
+					<img src="/Joco-02.svg" alt="Joco" class="w-full"/>
+					
+					<RegisterForm {supertitle} form={register_form} {onAuthenticate}/>
 				</Tabs.Content>
 				<Tabs.Content value="login">
-					<Image src="/Joco-02.png" alt="Joco" class="w-full"/>
+					<img src="/Joco-02.svg" alt="Joco" class="w-full"/>
 					<LoginForm form={login_form} {onAuthenticate}/>
 				</Tabs.Content>
 			</Tabs.Root>
