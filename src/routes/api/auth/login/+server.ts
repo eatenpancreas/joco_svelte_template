@@ -24,7 +24,8 @@ export async function POST({ url}) {
 	const pass_is_correct = await compare(data.ok.password, u.password);
 	if (!pass_is_correct) return This.errorMsg("Password is incorrect!", "password_incorrect");
 	
-	if (safeguard(() => prisma.unverifiedUser.findFirst({ where: { user_id: u.id } })).ok) {
+	const verif = safeguard(() => prisma.unverifiedUser.findFirst({ where: { user_id: u.id } }));
+	if (verif.ok && JSON.stringify(verif.ok) !== "{}") {
 		return This.errorMsg("User is not verified!", "user_not_verified");
 	}
 	

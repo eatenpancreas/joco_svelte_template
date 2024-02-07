@@ -3,10 +3,11 @@
 import type {RequiredAuths} from './auth.d';
 import jwt from "jsonwebtoken";
 import {env} from "$env/dynamic/private";
-import {errMsg, type Result, safeguard} from "$lib/api/result";
+import { errMsg, type Result, safeguard, safeguard_async } from '$lib/api/result';
 import type {PrismaClient} from "@prisma/client";
 import pkg from 'bcryptjs';
 import {userWithPermissions, type UserWithPermissions} from "$lib/controllers/user";
+import { prisma } from '$lib/gen/db';
 const {compare} = pkg;
 
 export async function authorize(request: Request, prisma: PrismaClient, required?: RequiredAuths): Promise<Result<UserWithPermissions, any>> {
@@ -33,6 +34,11 @@ export async function authorize(request: Request, prisma: PrismaClient, required
     if (!u.ok.password) return errMsg("User has no password!", "u_no_pass");
     const pass_is_correct = await compare(token.password, u.ok.password);
     if (!pass_is_correct) return errMsg("Incorrect password!", "incorrect_pass");
+    
+    const verif = await safeguard_async(() => prisma.unverifiedUser.findFirst({ where: { user_id: u.ok.id } }));
+    if (verif.ok && JSON.stringify(verif.ok) !== "{}") {
+        return errMsg("User is not verified!", "user_not_verified");
+    }
 
     if (!isAuthorized(u.ok, token.username, required)) return errMsg(`User ${token.username} not authorized!`, "auth");
 

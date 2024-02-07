@@ -6,6 +6,7 @@ export type UserWithPermissions = {
     username: string,
     permissions: { permission: string, level: number }[],
     password?: string,
+    id: string,
 }
 
 export async function userWithPermissions(prisma: PrismaClient, username: string): Promise<Result<UserWithPermissions, never>> {
@@ -25,5 +26,6 @@ export async function userWithPermissions(prisma: PrismaClient, username: string
         username: u.username,
         permissions: permissions,
         password: u.password,
+        id: u.id,
     }};
 }

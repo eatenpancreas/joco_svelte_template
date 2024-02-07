@@ -14,7 +14,7 @@
     const options = Login.POST.formOptions((callResponse) => {
         if (callResponse.err) error = callResponse.err.message;
         else { onAuthenticate(callResponse.ok); }
-    })
+    }, Login.User)
 </script>
 
 <div class="relative">

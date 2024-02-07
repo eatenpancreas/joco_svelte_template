@@ -1,6 +1,6 @@
 import * as Endpoint from './endpoints';
 import {authorize} from "$lib/api/auth";
-import { safeguard_async } from '$lib/api/result';
+import { errMsg, safeguard_async } from '$lib/api/result';
 import { prisma } from '$lib/gen/db';
 
 export async function DELETE({ url, request}) {
@@ -40,9 +40,16 @@ export async function GET({ url, request}) {
     
     const users = await safeguard_async(async () => {
         return prisma.user.findMany({
-            include: {permissions: true},
+            include: {permissions: { 
+                include: {
+                    permission: true
+                }
+            }},
             take: data.ok.limit ?? 10,
-            skip: data.ok.offset ?? 0
+            skip: data.ok.offset ?? 0,
+            orderBy: {
+                username: "asc",
+            }
         });
     });
     if (users.err) return This.error(users.err);
@@ -57,5 +64,19 @@ export async function GET({ url, request}) {
     
     let is_end = false;
     if (users.ok.length + (data.ok.offset ?? 0) >= users_count.ok) { is_end = true; }
-    return This.send({ users: users.ok, message, is_end, total: users_count.ok });
+    
+    const new_users = await Promise.all(users.ok.map(async (u) => {
+        const unverified = await safeguard_async(async () => {
+            return prisma.unverifiedUser.findFirst({
+                where: { user_id: u.id }
+            });
+        });
+        if (unverified.ok && JSON.stringify(unverified.ok) !== "{}") {
+            return {...u, is_verified: false};
+        }
+        
+        return {...u, is_verified: true};
+    }));
+    
+    return This.send({ users: new_users, message, is_end, total: users_count.ok });
 }
