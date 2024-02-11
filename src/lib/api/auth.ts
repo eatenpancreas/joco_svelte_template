@@ -7,7 +7,6 @@ import { errMsg, type Result, safeguard, safeguard_async } from '$lib/api/result
 import type {PrismaClient} from "@prisma/client";
 import pkg from 'bcryptjs';
 import {userWithPermissions, type UserWithPermissions} from "$lib/controllers/user";
-import { prisma } from '$lib/gen/db';
 const {compare} = pkg;
 
 export async function authorize(request: Request, prisma: PrismaClient, required?: RequiredAuths): Promise<Result<UserWithPermissions, any>> {

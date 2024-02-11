@@ -1,0 +1,123 @@
+use std::future::{Ready, ready};
+use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
+use actix_web::error::InternalError;
+use actix_web::http::header::HeaderMap;
+use actix_web::{Error, HttpResponse};
+use actix_web::web::Data;
+use futures_util::future::LocalBoxFuture;
+use jsonwebtoken::{Algorithm, decode, DecodingKey, Validation};
+use serde::{Deserialize, Serialize};
+use sqlx::{Pool, Postgres};
+use crate::db::Database;
+use crate::env::ApiEnv;
+use crate::errors::ErrorResponse;
+use crate::model::{User, UserPermission};
+
+type PermissionCheckCallback = fn(Vec<UserPermission>) -> bool;
+
+#[derive(Debug, Deserialize, Serialize)]
+struct JwtAuth {
+  username: String,
+  password: String
+}
+
+pub struct Jwt {
+  permission_check: Option<PermissionCheckCallback>
+}
+
+impl Jwt {
+  fn with_permission_check(check_callback: PermissionCheckCallback) -> Self {
+    Jwt { permission_check: Some(check_callback) }
+  }
+}
+
+impl Default for Jwt {
+  fn default() -> Self {
+    Jwt { permission_check: None }
+  }
+}
+
+impl<S, B> Transform<S, ServiceRequest> for Jwt
+  where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error>,
+    S::Future: 'static,
+    B: 'static,
+{
+  type Response = ServiceResponse<B>;
+  type Error = actix_web::Error;
+  type Transform = JwtMiddleware<S>;
+  type InitError = ();
+  type Future = Ready<Result<Self::Transform, Self::InitError>>;
+
+  fn new_transform(&self, service: S) -> Self::Future {
+    ready(Ok(JwtMiddleware { service, permission_check: self.permission_check }))
+  }
+}
+
+pub struct JwtMiddleware<S> {
+  permission_check: Option<PermissionCheckCallback>,
+  service: S,
+}
+
+impl<S, B> Service<ServiceRequest> for JwtMiddleware<S>
+  where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error>,
+    S::Future: 'static,
+    B: 'static,
+{
+  type Response = ServiceResponse<B>;
+  type Error = actix_web::Error;
+  type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
+
+  forward_ready!(service);
+
+  fn call(&self, req: ServiceRequest) -> Self::Future {
+    if ApiEnv::skip_auth() {
+      return Box::pin(self.service.call(req));
+    }
+    
+    let db: &Data<Database> = req.app_data().unwrap();
+    let pool = db.pool.clone();
+    let headers = req.headers().clone();
+    let fut = self.service.call(req);
+    let perm_check_callback = self.permission_check;
+
+    Box::pin(async move {
+      match authorize(pool, headers, perm_check_callback).await {
+        Ok(_) => fut.await, Err(e) => Err(e)
+      }
+    })
+  }
+}
+
+async fn authorize(
+  pool: Pool<Postgres>, headers: HeaderMap, perm_check_callback: Option<PermissionCheckCallback>
+) -> Result<(), Error> {
+  let auth_header = headers.get("Authorization").ok_or(unauthorized("No Authorization header present!"))?
+    .to_str().map_err(|_| unauthorized("Could not decode Authorization header!"))?;
+  
+  if !(auth_header.starts_with("Bearer ")) { return Err(unauthorized("Authorisation requires Bearer token!")) }
+  
+  let token = auth_header[7..].to_string();
+  let mut secret = ApiEnv::jwt_secret();
+  let key = DecodingKey::from_secret(secret.as_bytes());
+  let validation = Validation::new(Algorithm::HS256);
+  let decoding = decode::<JwtAuth>(&*token, &key, &validation).map_err(|_| unauthorized("Token is invalid!"))?;
+  
+  if !User::is_authenticated(&pool, &decoding.claims.username, &decoding.claims.password).await {
+    return Err(unauthorized("Could not authenticate user!"));
+  }
+  
+  //check if route has required permissions, if so, match them against the user
+  return if let Some(callback) = perm_check_callback {
+    let perms = UserPermission::from_user(&pool, &decoding.claims.username).await.unwrap_or(vec![]);
+    if callback(perms) { Ok(()) } else { Err(unauthorized("User does not have permissions!")) }
+  } else {
+    Ok(())
+  }
+}
+
+fn unauthorized(message: &str) -> Error {
+  InternalError::from_response("UNAUTHORIZED", HttpResponse::Unauthorized()
+    .json(ErrorResponse::private_fatal(message))).into()
+}
