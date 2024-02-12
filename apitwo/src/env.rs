@@ -5,8 +5,13 @@ pub struct ApiEnv;
 impl ApiEnv {
   pub fn skip_auth() -> bool { Self::_skip_auth().unwrap() }
   fn _skip_auth() -> Result<bool, String> {
-    let skip_auth_str = env::var("SKIP_AUTH").map_err(|x| x.to_string())?;
-    skip_auth_str.parse::<bool>().map_err(|x| x.to_string())
+    let var = env::var("SKIP_AUTH").map_err(|x| x.to_string())?;
+    var.parse::<bool>().map_err(|x| x.to_string())
+  }
+  pub fn email_auth_enabled() -> bool { Self::_email_auth_enabled().unwrap() }
+  fn _email_auth_enabled() -> Result<bool, String> {
+    let var = env::var("EMAIL_AUTH_ENABLED").map_err(|x| x.to_string())?;
+    var.parse::<bool>().map_err(|x| x.to_string())
   }
   pub fn database_url() -> String { Self::_database_url().unwrap() }
   fn _database_url() -> Result<String, String> {
@@ -20,7 +25,8 @@ impl ApiEnv {
   pub fn test_all() -> bool {
     log(Self::_database_url(), "DATABASE_URL") &&
     log(Self::_skip_auth(), "SKIP_AUTH") &&
-    log(Self::_jwt_secret(), "JWT_SECRET")
+    log(Self::_jwt_secret(), "JWT_SECRET") &&
+    log(Self::_email_auth_enabled(), "EMAIL_AUTH_ENABLED")
   }
 }
 

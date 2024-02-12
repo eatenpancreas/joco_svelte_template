@@ -5,10 +5,11 @@ CREATE TABLE "permission" (
 );
 
 CREATE TABLE "user" (
-    username VARCHAR(64) NOT NULL PRIMARY KEY DEFAULT (select substr(md5(random()::text), 0, 64)),
+    username VARCHAR(64) NOT NULL PRIMARY KEY,
     email VARCHAR(320) NOT NULL UNIQUE,
     password VARCHAR(64) NOT NULL,
-    is_verified BOOLEAN NOT NULL,
+    is_banned BOOLEAN NOT NULL DEFAULT FALSE,
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

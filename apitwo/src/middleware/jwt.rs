@@ -4,21 +4,26 @@ use actix_web::error::InternalError;
 use actix_web::http::header::HeaderMap;
 use actix_web::{Error, HttpResponse};
 use actix_web::web::Data;
+use chrono::{DateTime, Utc};
 use futures_util::future::LocalBoxFuture;
 use jsonwebtoken::{Algorithm, decode, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 use crate::db::Database;
 use crate::env::ApiEnv;
-use crate::errors::ErrorResponse;
+use crate::handshake::{ErrorOrigin, ErrorResponse};
 use crate::model::{User, UserPermission};
 
 type PermissionCheckCallback = fn(Vec<UserPermission>) -> bool;
 
 #[derive(Debug, Deserialize, Serialize)]
-struct JwtAuth {
-  username: String,
-  password: String
+pub struct JwtAuth {
+  pub(crate) username: String,
+  pub(crate) db_sign_moment: DateTime<Utc>,
+  
+  pub(crate) exp: u64,
+  pub(crate) iat: u64,
+  pub(crate) nbf: u64
 }
 
 pub struct Jwt {
@@ -44,7 +49,7 @@ impl<S, B> Transform<S, ServiceRequest> for Jwt
     B: 'static,
 {
   type Response = ServiceResponse<B>;
-  type Error = actix_web::Error;
+  type Error = Error;
   type Transform = JwtMiddleware<S>;
   type InitError = ();
   type Future = Ready<Result<Self::Transform, Self::InitError>>;
@@ -61,12 +66,12 @@ pub struct JwtMiddleware<S> {
 
 impl<S, B> Service<ServiceRequest> for JwtMiddleware<S>
   where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error>,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
     S::Future: 'static,
     B: 'static,
 {
   type Response = ServiceResponse<B>;
-  type Error = actix_web::Error;
+  type Error = Error;
   type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
 
   forward_ready!(service);
@@ -93,31 +98,39 @@ impl<S, B> Service<ServiceRequest> for JwtMiddleware<S>
 async fn authorize(
   pool: Pool<Postgres>, headers: HeaderMap, perm_check_callback: Option<PermissionCheckCallback>
 ) -> Result<(), Error> {
-  let auth_header = headers.get("Authorization").ok_or(unauthorized("No Authorization header present!"))?
-    .to_str().map_err(|_| unauthorized("Could not decode Authorization header!"))?;
+  let auth_header = headers.get("Authorization").ok_or(unauthorized("No Authorization header present!", ErrorOrigin::Auth))?
+    .to_str().map_err(|_| unauthorized("Could not decode Authorization header!", ErrorOrigin::Auth))?;
   
-  if !(auth_header.starts_with("Bearer ")) { return Err(unauthorized("Authorisation requires Bearer token!")) }
+  if !(auth_header.starts_with("Bearer ")) { return Err(unauthorized("Authorisation requires Bearer token!", ErrorOrigin::Auth)) }
   
   let token = auth_header[7..].to_string();
-  let mut secret = ApiEnv::jwt_secret();
+  let secret = ApiEnv::jwt_secret();
   let key = DecodingKey::from_secret(secret.as_bytes());
   let validation = Validation::new(Algorithm::HS256);
-  let decoding = decode::<JwtAuth>(&*token, &key, &validation).map_err(|_| unauthorized("Token is invalid!"))?;
+  let decoding = decode::<JwtAuth>(&*token, &key, &validation).map_err(
+    |e| unauthorized(format!("Token is invalid! {e}").as_str(), ErrorOrigin::Auth))?;
   
-  if !User::is_authenticated(&pool, &decoding.claims.username, &decoding.claims.password).await {
-    return Err(unauthorized("Could not authenticate user!"));
+  let user = User::get(&pool, &decoding.claims.username).await
+    .ok_or(unauthorized("Could not find user!", ErrorOrigin::User))?;
+  
+  if !user.is_verified() {
+    return Err(unauthorized("User is not verified!", ErrorOrigin::User));
+  }
+
+  if user.last_login().timestamp() != decoding.claims.db_sign_moment.timestamp() {
+    return Err(unauthorized("Token is old!", ErrorOrigin::Auth));
   }
   
   //check if route has required permissions, if so, match them against the user
   return if let Some(callback) = perm_check_callback {
     let perms = UserPermission::from_user(&pool, &decoding.claims.username).await.unwrap_or(vec![]);
-    if callback(perms) { Ok(()) } else { Err(unauthorized("User does not have permissions!")) }
+    if callback(perms) { Ok(()) } else { Err(unauthorized("User does not have permissions!", ErrorOrigin::Perms)) }
   } else {
     Ok(())
   }
 }
 
-fn unauthorized(message: &str) -> Error {
+fn unauthorized(message: &str, on: ErrorOrigin) -> Error {
   InternalError::from_response("UNAUTHORIZED", HttpResponse::Unauthorized()
-    .json(ErrorResponse::private_fatal(message))).into()
+    .json(ErrorResponse::private_fatal(message, on))).into()
 }

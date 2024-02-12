@@ -3,11 +3,11 @@ pub mod db;
 pub mod model;
 mod middleware;
 mod env;
-mod errors;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod seeders;
+mod handshake;
 
 use std::io;
 use actix_web::{App, HttpServer};
@@ -28,17 +28,19 @@ async fn main() -> io::Result<()> {
 
     let pool = db::connect().await?;
     
-    sqlx::migrate!()
+    if let Err(e) = sqlx::migrate!()
       .run(&pool)
-      .await.unwrap();
+      .await {
+        println!("-- Migration issue | {e} --")
+    }
     
     HttpServer::new(move || {
         App::new()
           .app_data(new_db(pool.clone()))
           .wrap(Logger::default())
           .service(index)
-          .configure(routes::permission::config)
-          .configure(routes::user::config)
+          .configure(routes::users::config)
+          .configure(routes::auth::config)
     }).bind(("127.0.0.1", 8080))?
       .run()
       .await
