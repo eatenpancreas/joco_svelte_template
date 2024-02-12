@@ -93,32 +93,29 @@ impl<S, B> Service<ServiceRequest> for JwtMiddleware<S>
     if ApiEnv::skip_auth() {
       return Box::pin(self.service.call(req));
     }
+    
 
-    // let authorized = {
-    //   let db: &Data<Database> = req.app_data().unwrap();
-    //   let pool = db.pool.clone();
-    //   let headers = req.headers().clone();
-    //   let mut extensions = req.extensions_mut();
-    // 
-    //   match block_on(authorize(pool, headers)) {
-    //     Ok(u) => {
-    //       extensions.insert(u);
-    //       Ok(())
-    //     }, Err(e) => Err(e)
-    //   }
-    // };
-    // 
-    // if let Err(e) = authorized {
-    //   return Box::pin(async move { Err(e) });
-    // }
+    // Box::pin(self.service.call(req))
+    Box::pin(async move {
+      let u = {
+        let db: &Data<Database> = req.app_data().unwrap();
+        let pool = db.pool.clone();
+        let headers = req.headers().clone();
+        let mut extensions = req.extensions_mut();
 
-    Box::pin(self.service.call(req))
-    // Box::pin(async move {
-    //   self.service.call(req).await
-      // match authorized {
-      //   Ok(_) => self.service.call(req).await, Err(e) => Err(e)
-      // }
-    // })
+        match authorize(pool, headers).await {
+          Ok(u) => {
+            extensions.insert(u);
+            Ok(())
+          }, Err(e) => Err(e)
+        }
+      };
+      
+      match u {
+        Ok(_) => { self.service.call(req).await } 
+        Err(e) => Err(e)
+      }
+    })
   }
 }
 
