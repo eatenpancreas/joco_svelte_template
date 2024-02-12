@@ -2,15 +2,18 @@
 use serde::Serialize;
 use sqlx::PgPool;
 
-#[derive(sqlx::FromRow, Serialize, Debug)]
+#[derive(sqlx::FromRow, Serialize, Debug, Clone)]
 pub struct UserPermission {
   name: String,
   level: i16,
 }
 
 impl UserPermission {
+  pub fn name(&self) -> &String { &self.name }
+  pub fn level(&self) -> i16 { self.level }
+  
   #[inline]
-  pub async fn from_user(db: &PgPool, username: &str) -> Result<Vec<Self>, sqlx::Error> {
+  pub async fn from_username(db: &PgPool, username: &str) -> Result<Vec<Self>, sqlx::Error> {
     sqlx::query_as!(
       UserPermission,
       r#"

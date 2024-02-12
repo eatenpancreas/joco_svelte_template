@@ -3,6 +3,7 @@ use jsonwebtoken::get_current_timestamp;
 use sqlx::{PgPool};
 use crate::middleware::JwtAuth;
 
+#[derive(Clone)]
 pub struct User {
   username: String,
   email: String,

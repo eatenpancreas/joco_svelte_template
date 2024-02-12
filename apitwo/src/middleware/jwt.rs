@@ -2,9 +2,10 @@ use std::future::{Ready, ready};
 use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::error::InternalError;
 use actix_web::http::header::HeaderMap;
-use actix_web::{Error, HttpResponse};
+use actix_web::{Error, HttpMessage, HttpResponse};
 use actix_web::web::Data;
 use chrono::{DateTime, Utc};
+use futures_executor::block_on;
 use futures_util::future::LocalBoxFuture;
 use jsonwebtoken::{Algorithm, decode, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
@@ -26,19 +27,11 @@ pub struct JwtAuth {
   pub(crate) nbf: u64
 }
 
-pub struct Jwt {
-  permission_check: Option<PermissionCheckCallback>
-}
-
-impl Jwt {
-  fn with_permission_check(check_callback: PermissionCheckCallback) -> Self {
-    Jwt { permission_check: Some(check_callback) }
-  }
-}
+pub struct Jwt;
 
 impl Default for Jwt {
   fn default() -> Self {
-    Jwt { permission_check: None }
+    Jwt
   }
 }
 
@@ -55,12 +48,11 @@ impl<S, B> Transform<S, ServiceRequest> for Jwt
   type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
   fn new_transform(&self, service: S) -> Self::Future {
-    ready(Ok(JwtMiddleware { service, permission_check: self.permission_check }))
+    ready(Ok(JwtMiddleware { service }))
   }
 }
 
 pub struct JwtMiddleware<S> {
-  permission_check: Option<PermissionCheckCallback>,
   service: S,
 }
 
@@ -76,28 +68,63 @@ impl<S, B> Service<ServiceRequest> for JwtMiddleware<S>
 
   forward_ready!(service);
 
+  // fn call(&self, req: ServiceRequest) -> Self::Future {
+  //   if ApiEnv::skip_auth() {
+  //     return Box::pin(self.service.call(req));
+  //   }
+  //   
+  //   let db: &Data<Database> = req.app_data().unwrap();
+  //   let pool = db.pool.clone();
+  //   let headers = req.headers().clone();
+  //   let service = &self.service;
+  //   let extensions = req.extensions_mut();
+  // 
+  //   Box::pin(async move {
+  //     match authorize(pool, headers).await {
+  //       Ok(u) => {
+  //         extensions.insert(u);
+  //         service.call(req).await
+  //       }, Err(e) => Err(e)
+  //     }
+  //   })
+  // }
+
   fn call(&self, req: ServiceRequest) -> Self::Future {
     if ApiEnv::skip_auth() {
       return Box::pin(self.service.call(req));
     }
-    
-    let db: &Data<Database> = req.app_data().unwrap();
-    let pool = db.pool.clone();
-    let headers = req.headers().clone();
-    let fut = self.service.call(req);
-    let perm_check_callback = self.permission_check;
 
-    Box::pin(async move {
-      match authorize(pool, headers, perm_check_callback).await {
-        Ok(_) => fut.await, Err(e) => Err(e)
-      }
-    })
+    // let authorized = {
+    //   let db: &Data<Database> = req.app_data().unwrap();
+    //   let pool = db.pool.clone();
+    //   let headers = req.headers().clone();
+    //   let mut extensions = req.extensions_mut();
+    // 
+    //   match block_on(authorize(pool, headers)) {
+    //     Ok(u) => {
+    //       extensions.insert(u);
+    //       Ok(())
+    //     }, Err(e) => Err(e)
+    //   }
+    // };
+    // 
+    // if let Err(e) = authorized {
+    //   return Box::pin(async move { Err(e) });
+    // }
+
+    Box::pin(self.service.call(req))
+    // Box::pin(async move {
+    //   self.service.call(req).await
+      // match authorized {
+      //   Ok(_) => self.service.call(req).await, Err(e) => Err(e)
+      // }
+    // })
   }
 }
 
 async fn authorize(
-  pool: Pool<Postgres>, headers: HeaderMap, perm_check_callback: Option<PermissionCheckCallback>
-) -> Result<(), Error> {
+  pool: Pool<Postgres>, headers: HeaderMap
+) -> Result<AuthorizedUser, Error> {
   let auth_header = headers.get("Authorization").ok_or(unauthorized("No Authorization header present!", ErrorOrigin::Auth))?
     .to_str().map_err(|_| unauthorized("Could not decode Authorization header!", ErrorOrigin::Auth))?;
   
@@ -121,14 +148,37 @@ async fn authorize(
     return Err(unauthorized("Token is old!", ErrorOrigin::Auth));
   }
   
-  //check if route has required permissions, if so, match them against the user
-  return if let Some(callback) = perm_check_callback {
-    let perms = UserPermission::from_user(&pool, &decoding.claims.username).await.unwrap_or(vec![]);
-    if callback(perms) { Ok(()) } else { Err(unauthorized("User does not have permissions!", ErrorOrigin::Perms)) }
-  } else {
-    Ok(())
+  let perms = UserPermission::from_username(&pool, user.username().clone().as_str()).await;
+  if perms.is_err() {
+    return Err(unauthorized("Could not get permissions!", ErrorOrigin::Perms));
+  }
+  
+  // send user with permissions to request
+  Ok(AuthorizedUser {
+    u: user,
+    permissions: perms.unwrap()
+  })
+}
+
+#[derive(Clone)]
+pub struct AuthorizedUser {
+  u: User,
+  permissions: Vec<UserPermission>
+}
+
+impl AuthorizedUser {
+  pub fn is_username(&self, username: &str) -> bool {
+    self.u.username() == username
+  }
+  pub fn has_level(&self, level: i16) -> bool {
+    self.permissions.iter().any(|perm| perm.level() >= level)
+  }
+  
+  pub fn has_permission(&self, permission: &str) -> bool {
+    self.permissions.iter().any(|perm| perm.name() == permission)
   }
 }
+
 
 fn unauthorized(message: &str, on: ErrorOrigin) -> Error {
   InternalError::from_response("UNAUTHORIZED", HttpResponse::Unauthorized()
