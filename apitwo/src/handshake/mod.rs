@@ -1,6 +1,6 @@
 use actix_web::{HttpResponse};
-use serde::Serialize;
-use crate::model::UserPermission;
+use serde::{Deserialize, Serialize};
+use crate::model::{User, UserPermission};
 
 #[derive(Serialize)]
 pub struct ErrorResponse {
@@ -49,7 +49,7 @@ pub enum ErrorOrigin {
 
 #[derive(Serialize)]
 #[serde(tag = "ok_kind", content = "data")]
-pub enum OkKind {
+pub enum OkKind<T: Serialize> {
   #[serde(rename = "simple")]
   Simple,
   #[serde(rename = "authenticated")]
@@ -57,11 +57,19 @@ pub enum OkKind {
     token: String,
     username: String
   },
+  #[serde(rename = "redirected")]
+  Redirected {
+    to: String
+  },
   #[serde(rename = "user_permissions")]
   UserPermissions {
     username: String,
     permissions: Vec<UserPermission>
   },
+  #[serde(rename = "list")]
+  List(Vec<T>),
+  #[serde(rename = "item")]
+  Item(T),
 }
 
 #[derive(Serialize)]
@@ -84,20 +92,27 @@ pub struct Error {
 }
 
 #[derive(Serialize)]
-pub struct OkResponse {
+pub struct OkResponse<T: Serialize> {
   message: String,
   pub errors: Vec<Error>,
 
   #[serde(flatten)]
-  ok_kind: OkKind
+  ok_kind: OkKind<T>
 }
 
-impl OkResponse {
-  pub fn new_send<T: ToString>(message: T, kind: OkKind) -> HttpResponse {
+impl<T: Serialize> OkResponse<T> {
+  pub fn new_send<S: ToString>(message: S, kind: OkKind<T>) -> HttpResponse {
     HttpResponse::Ok().json(OkResponse {
       errors: vec![],
       ok_kind: kind,
       message: message.to_string(),
     })
   }
+}
+
+
+#[derive(Deserialize, Serialize)]
+pub struct DbRange {
+  pub limit: Option<u16>,
+  pub offset: Option<u16>
 }

@@ -2,6 +2,7 @@ use actix_web::{HttpResponse, post, web};
 use actix_web::web::{Data};
 use jsonwebtoken::{EncodingKey, Header};
 use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
 use crate::db::Database;
 use crate::env::ApiEnv;
 use crate::handshake::{ErrorOrigin, ErrorResponse, OkKind, OkResponse};
@@ -11,6 +12,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
   cfg.service(
     web::scope("/auth")
       .service(login)
+      .service(register)
   );
 }
 
@@ -54,7 +56,11 @@ async fn login(post: web::Json<LoginForm>, db: Data<Database>) -> HttpResponse {
     return HttpResponse::Unauthorized().json(ErrorResponse::public_fatal("Password is incorrect!", ErrorOrigin::Password));
   }
   
-  let auth = user.login(&db.pool).await;
+  authenticate_login(&user, &db.pool).await
+}
+
+async fn authenticate_login(user: &User, pool: &PgPool) -> HttpResponse {
+  let auth = user.login(pool).await;
   match auth {
     Err(e) => HttpResponse::InternalServerError().json(
       ErrorResponse::private_fatal(format!("User not logged in: {e}").as_str(), ErrorOrigin::Db)),
@@ -67,7 +73,7 @@ async fn login(post: web::Json<LoginForm>, db: Data<Database>) -> HttpResponse {
       }
       let jwt = jwt.unwrap();
 
-      OkResponse::new_send("Logged in!", OkKind::Authenticated {
+      OkResponse::new_send("Logged in!", OkKind::<()>::Authenticated {
         token: jwt,
         username: user.username().clone()
       })
@@ -75,19 +81,38 @@ async fn login(post: web::Json<LoginForm>, db: Data<Database>) -> HttpResponse {
   }
 }
 
-// struct RegisterForm {
-//   
-// }
-// 
-// #[post("/register")]
-// fn register(post: web::Json<NewPost>, db: Data<Database>) -> HttpResponse {
-//   if let Some(_) = match post.0 {
-//   LoginForm::WithUsername(u) => User::get(&db.pool, &u.username),
-//   LoginForm::WithEmail(e) => User::get_email(&db.pool, &e.email),
-//   }.await {
-//   return HttpResponse::Conflict().json(ErrorResponse::public_fatal("User already exists!"));
-//   }
-// }
+#[derive(Deserialize)]
+struct RegisterForm {
+  username: String,
+  email: String,
+  password: String
+}
+
+#[post("/register")]
+async fn register(post: web::Json<RegisterForm>, db: Data<Database>) -> HttpResponse {
+  if let Some(_) = User::get(&db.pool, &post.username).await {
+    return HttpResponse::Conflict().json(ErrorResponse::public_fatal("User already exists!", ErrorOrigin::User));
+  }
+  
+  let registered = User::register(&db.pool, &*post.username, &*post.email, &*post.password).await;
+  if let Err(e) = registered {
+    return HttpResponse::InternalServerError().json(ErrorResponse::private_fatal(format!("Could not register!: {e}").as_str(), ErrorOrigin::Db));
+  }
+  let mut registered = registered.unwrap();
+  
+  if ApiEnv::email_auth_enabled() {
+    //todo mail SMTP
+    OkResponse::new_send("Redirecting to mailer", OkKind::<()>::Redirected {
+      to: "todo".to_string()
+    })
+  } else {
+    if let Err(_) = registered.set_verified(&db.pool, true).await {
+      return HttpResponse::InternalServerError().json(ErrorResponse::private_fatal("Could not set user to verified!", ErrorOrigin::Db));
+    }
+    
+    authenticate_login(&registered, &db.pool).await
+  }
+}
 
 
 // #[post("/confirm")]

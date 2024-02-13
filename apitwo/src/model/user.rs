@@ -1,9 +1,14 @@
+use std::io;
+use std::io::ErrorKind;
+use actix_web::web::Path;
+use bcrypt::DEFAULT_COST;
 use chrono::{Duration, NaiveDateTime, Utc};
 use jsonwebtoken::get_current_timestamp;
+use serde::Serialize;
 use sqlx::{PgPool};
 use crate::middleware::JwtAuth;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct User {
   username: String,
   email: String,
@@ -20,12 +25,20 @@ impl User {
   pub fn last_login(&self) -> &NaiveDateTime { &self.last_login }
   pub fn is_verified(&self) -> bool { self.is_verified }
   
-  pub async fn get(db: &PgPool, username: &String) -> Option<Self> {
+  pub async fn get(db: &PgPool, username: &str) -> Option<Self> {
     sqlx::query_as!(
       Self,
       r#"SELECT username, email, is_verified, last_login FROM "user" WHERE "user".username = $1"#, 
       username
     ).fetch_one(db).await.ok()
+  }
+  
+  pub async fn get_all(db: &PgPool, limit: i64, offset: i64) -> Option<Vec<Self>> {
+    sqlx::query_as!(
+      Self,
+      r#"SELECT username, email, is_verified, last_login FROM "user" LIMIT $1 OFFSET $2"#, 
+      limit, offset
+    ).fetch_all(db).await.ok()
   }
   
   pub async fn verify_password(&self, db: &PgPool, password: &str) -> bool {
@@ -49,6 +62,46 @@ impl User {
     ).fetch_one(db).await.ok()
   }
   
+  pub async fn register(db: &PgPool, username: &str, email: &str, password: &str) -> Result<Self, sqlx::Error> {
+    let hash = bcrypt::hash(password, DEFAULT_COST);
+    
+    if let Err(e) = hash {
+      return Err(sqlx::Error::Io(io::Error::new(ErrorKind::InvalidData, "Could not hash password!")));
+    }
+    
+    let hash = hash.unwrap();
+    
+    if let Err(e) = sqlx::query!(
+      r#"INSERT INTO "user" (username, email, password, is_verified) VALUES ($1, $2, $3, false); "#, 
+      username, email, hash
+    ).execute(db).await {
+      return Err(e)
+    }
+
+    if let Err(e) = sqlx::query!(
+      r#"INSERT INTO "user_permission" (user_id, permission_id) VALUES ($1, 'guest'); "#, 
+      username
+    ).execute(db).await {
+      return Err(e)
+    }
+    
+    Self::get(db, username).await.ok_or(sqlx::Error::ColumnNotFound("User".to_string()))
+  }
+  
+  pub async fn set_verified(&mut self, db: &PgPool, is_verified: bool) -> Result<(), sqlx::Error> {
+    self.is_verified = true;
+    
+    let now = Utc::now();
+    if let Err(e) = sqlx::query!(
+      r#"UPDATE "user" SET is_verified=$1 WHERE "user".username = $2"#, 
+      is_verified,
+      &self.username
+    ).execute(db).await {
+      return Err(e)
+    }
+    Ok(())
+  }
+  
   pub async fn login(&self, db: &PgPool) -> Result<JwtAuth, sqlx::Error> {
     let now = Utc::now();
     if let Err(e) = sqlx::query!(
@@ -68,5 +121,21 @@ impl User {
       username: self.username.clone(),
       db_sign_moment: now,
     })
+  }
+  
+  pub async fn delete(self, db: &PgPool) -> Result<(), sqlx::Error> {
+    if let Err(e) = sqlx::query!(
+      r#"DELETE FROM "user_permission" WHERE "user_permission".user_id = $1"#, 
+      &self.username
+    ).execute(db).await {
+      return Err(e)
+    }
+    if let Err(e) = sqlx::query!(
+      r#"DELETE FROM "user" WHERE "user".username = $1"#, 
+      &self.username
+    ).execute(db).await {
+      return Err(e)
+    }
+    Ok(())
   }
 }

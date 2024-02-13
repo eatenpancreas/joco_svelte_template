@@ -7,5 +7,5 @@ use crate::handshake::{OkKind, OkResponse};
 
 #[get("/")]
 async fn index() -> HttpResponse {
-  OkResponse::new_send("Welcome, This is the Joco Svelte Template!", OkKind::Simple)
+  OkResponse::new_send("Welcome, This is the Joco Svelte Template!", OkKind::<()>::Simple)
 }
