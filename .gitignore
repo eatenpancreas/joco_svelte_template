@@ -10,4 +10,5 @@ node_modules
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-apitwo/target/
+papi/target/
+papi/Cargo.lock
