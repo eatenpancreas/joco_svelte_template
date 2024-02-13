@@ -1,15 +1,15 @@
 use std::future::{Ready, ready};
+use std::rc::Rc;
 use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::error::InternalError;
 use actix_web::http::header::HeaderMap;
 use actix_web::{Error, HttpMessage, HttpResponse};
-use actix_web::web::Data;
+use actix_web::web::{block, Data};
 use chrono::{DateTime, Utc};
-use futures_executor::block_on;
 use futures_util::future::LocalBoxFuture;
 use jsonwebtoken::{Algorithm, decode, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
-use sqlx::{Pool, Postgres};
+use sqlx::{Pool, Postgres, test_block_on};
 use crate::db::Database;
 use crate::env::ApiEnv;
 use crate::handshake::{ErrorOrigin, ErrorResponse};
@@ -35,7 +35,7 @@ impl Default for Jwt {
   }
 }
 
-impl<S, B> Transform<S, ServiceRequest> for Jwt
+impl<S :'static, B> Transform<S, ServiceRequest> for Jwt
   where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error>,
     S::Future: 'static,
@@ -48,17 +48,17 @@ impl<S, B> Transform<S, ServiceRequest> for Jwt
   type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
   fn new_transform(&self, service: S) -> Self::Future {
-    ready(Ok(JwtMiddleware { service }))
+    ready(Ok(JwtMiddleware { service: Rc::new(service) }))
   }
 }
 
 pub struct JwtMiddleware<S> {
-  service: S,
+  service: Rc<S>,
 }
 
 impl<S, B> Service<ServiceRequest> for JwtMiddleware<S>
   where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
     B: 'static,
 {
@@ -68,52 +68,33 @@ impl<S, B> Service<ServiceRequest> for JwtMiddleware<S>
 
   forward_ready!(service);
 
-  // fn call(&self, req: ServiceRequest) -> Self::Future {
-  //   if ApiEnv::skip_auth() {
-  //     return Box::pin(self.service.call(req));
-  //   }
-  //   
-  //   let db: &Data<Database> = req.app_data().unwrap();
-  //   let pool = db.pool.clone();
-  //   let headers = req.headers().clone();
-  //   let service = &self.service;
-  //   let extensions = req.extensions_mut();
-  // 
-  //   Box::pin(async move {
-  //     match authorize(pool, headers).await {
-  //       Ok(u) => {
-  //         extensions.insert(u);
-  //         service.call(req).await
-  //       }, Err(e) => Err(e)
-  //     }
-  //   })
-  // }
-
   fn call(&self, req: ServiceRequest) -> Self::Future {
     if ApiEnv::skip_auth() {
       return Box::pin(self.service.call(req));
     }
     
+    let svc = self.service.clone();
 
     // Box::pin(self.service.call(req))
     Box::pin(async move {
-      let u = {
-        let db: &Data<Database> = req.app_data().unwrap();
-        let pool = db.pool.clone();
-        let headers = req.headers().clone();
+      let db: &Data<Database> = req.app_data().unwrap();
+      let pool = db.pool.clone();
+      let headers = req.headers().clone();
+      let res = {
         let mut extensions = req.extensions_mut();
 
         match authorize(pool, headers).await {
           Ok(u) => {
             extensions.insert(u);
             Ok(())
-          }, Err(e) => Err(e)
+          } Err(e) => Err(e)
         }
       };
       
-      match u {
-        Ok(_) => { self.service.call(req).await } 
-        Err(e) => Err(e)
+      match res {
+        Ok(_) => {
+          svc.call(req).await
+        } Err(e) => Err(e)
       }
     })
   }
@@ -157,7 +138,7 @@ async fn authorize(
   })
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AuthorizedUser {
   u: User,
   permissions: Vec<UserPermission>

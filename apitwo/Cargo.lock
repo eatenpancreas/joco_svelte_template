@@ -311,7 +311,6 @@ dependencies = [
  "chrono",
  "dotenv",
  "env_logger",
- "futures-executor",
  "futures-util",
  "headers",
  "jsonwebtoken",
