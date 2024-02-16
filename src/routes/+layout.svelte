@@ -2,18 +2,13 @@
     import "../app.css";
     import * as Navbar from "$lib/components/navbar";
     import {Person} from "radix-icons-svelte";
-    import {onMount} from "svelte";
-    import {client_auth, init_auth} from "$api/auth";
     import AdminOnly from '$lib/components/AdminOnly.svelte';
-
-    onMount(() => {
-        init_auth();
-    });
+    import jwt from '$lib/api/jwt';
     
     let user = "Log in";
 
-    client_auth.subscribe((auth) => {
-        user = (auth == null ? "Log in" : auth.username);
+    jwt.subscribe((auth) => {
+        user = (auth == undefined ? "Log in" : auth.username);
     });
 </script>
 

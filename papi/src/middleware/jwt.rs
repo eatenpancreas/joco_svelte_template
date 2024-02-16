@@ -4,12 +4,12 @@ use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Tr
 use actix_web::error::InternalError;
 use actix_web::http::header::HeaderMap;
 use actix_web::{Error, HttpMessage, HttpResponse};
-use actix_web::web::{block, Data};
+use actix_web::web::{Data};
 use chrono::{DateTime, Utc};
 use futures_util::future::LocalBoxFuture;
 use jsonwebtoken::{Algorithm, decode, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
-use sqlx::{Pool, Postgres, test_block_on};
+use sqlx::{Pool, Postgres};
 use crate::db::Database;
 use crate::env::ApiEnv;
 use crate::handshake::{ErrorOrigin, ErrorResponse};

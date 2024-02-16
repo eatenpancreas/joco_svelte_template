@@ -1,37 +1,68 @@
+mod handshake_ext;
+
+use std::collections::HashMap;
 use actix_web::{HttpResponse};
 use serde::{Deserialize, Serialize};
-use crate::model::{User, UserPermission};
+use ts_rs::TS;
+use validator::{Validate, ValidationErrors};
+use serde_with::serde_as;
+use crate::handshake::handshake_ext::ValidationError;
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export, export_to = "../src/lib/handshake/ErrorResponse.ts")]
 pub struct ErrorResponse {
   message: String,
-  errors: Vec<Error>
+  kind: ErrorResponseKind
+}
+
+
+#[derive(Serialize, TS)]
+#[ts(export, export_to = "../src/lib/handshake/ErrorResponseKind.ts")]
+#[serde(tag = "err_kind", content = "response")]
+pub enum ErrorResponseKind {
+  #[serde(rename = "list")]
+  Vec(Vec<Error>),
+  #[serde(rename = "single")]
+  Single(Error),
+  #[serde(rename = "validation")]
+  Validation(Validation)
 }
 
 impl ErrorResponse {
   pub fn private_fatal(message: &str, on: ErrorOrigin) -> Self {
     ErrorResponse {
       message: message.to_string(),
-      errors: vec![Error {
+      kind: ErrorResponseKind::Single(Error {
         kind: ErrorKind::PrivateFatal,
         message: message.to_string(),
         origin: on
-      }]
+      })
     }
   }
   pub fn public_fatal(message: &str, on: ErrorOrigin) -> Self {
     ErrorResponse {
       message: message.to_string(),
-      errors: vec![Error {
+      kind: ErrorResponseKind::Single(Error {
         kind: ErrorKind::PublicFatal,
         message: message.to_string(),
         origin: on
-      }]
+      })
+    }
+  }
+  
+  pub fn validation(message: &str, on: ValidationErrors) -> Self {
+    let fields = on.field_errors().iter()
+      .map(|(s, err)| (s.to_string(), err.iter().map(|err| ValidationError::from(err.clone())).collect() )).collect();
+    
+    ErrorResponse {
+      message: message.to_string(),
+      kind: ErrorResponseKind::Validation(Validation { fields })
     }
   }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export, export_to = "../src/lib/handshake/ErrorOrigin.ts")]
 pub enum ErrorOrigin {
   #[serde(rename = "username")]
   Username,
@@ -45,34 +76,26 @@ pub enum ErrorOrigin {
   Auth,
   #[serde(rename = "permissions")]
   Perms,
+  #[serde(rename = "fetch")]
+  Fetch,
 }
 
-#[derive(Serialize)]
-#[serde(tag = "ok_kind", content = "data")]
-pub enum OkKind<T: Serialize> {
+#[derive(Serialize, TS)]
+#[ts(export, export_to = "../src/lib/handshake/OkResponseKind.ts")]
+#[serde(tag = "ok_kind", content = "response")]
+pub enum OkResponseKind<T: Serialize + TS> {
   #[serde(rename = "simple")]
   Simple,
-  #[serde(rename = "authenticated")]
-  Authenticated {
-    token: String,
-    username: String
-  },
   #[serde(rename = "redirected")]
   Redirected {
     to: String
   },
-  #[serde(rename = "user_permissions")]
-  UserPermissions {
-    username: String,
-    permissions: Vec<UserPermission>
-  },
-  #[serde(rename = "list")]
-  List(Vec<T>),
-  #[serde(rename = "item")]
-  Item(T),
+  #[serde(rename = "data")]
+  Data(T),
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export, export_to = "../src/lib/handshake/ErrorKind.ts")]
 pub enum ErrorKind {
   #[serde(rename = "public_minor")]
   PublicMinor,
@@ -81,38 +104,46 @@ pub enum ErrorKind {
   #[serde(rename = "private_minor")]
   PrivateMinor,
   #[serde(rename = "private_fatal")]
-  PrivateFatal
+  PrivateFatal,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Debug, TS)]
+#[ts(export, export_to = "../src/lib/handshake/Validation.ts")]
+struct Validation {
+  fields: HashMap<String, Vec<ValidationError>>,
+}
+
+#[derive(Serialize, TS)]
+#[ts(export, export_to = "../src/lib/handshake/Error.ts")]
 pub struct Error {
   kind: ErrorKind,
   message: String,
   origin: ErrorOrigin,
 }
 
-#[derive(Serialize)]
-pub struct OkResponse<T: Serialize> {
+#[derive(Serialize, TS)]
+#[ts(export, export_to = "../src/lib/handshake/OkResponse.ts")]
+pub struct OkResponse<T: Serialize + TS> {
   message: String,
   pub errors: Vec<Error>,
-
-  #[serde(flatten)]
-  ok_kind: OkKind<T>
+  ok: OkResponseKind<T>
 }
 
-impl<T: Serialize> OkResponse<T> {
-  pub fn new_send<S: ToString>(message: S, kind: OkKind<T>) -> HttpResponse {
+impl<T: Serialize + TS> OkResponse<T> {
+  pub fn new_send<S: ToString>(message: S, kind: OkResponseKind<T>) -> HttpResponse {
     HttpResponse::Ok().json(OkResponse {
       errors: vec![],
-      ok_kind: kind,
+      ok: kind,
       message: message.to_string(),
     })
   }
 }
 
-
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, TS, Validate)]
+#[ts(export, export_to = "../src/lib/handshake/DbRange.ts")]
 pub struct DbRange {
+  #[validate(range(min = 1, max = 40))]
   pub limit: Option<u16>,
+  #[validate(range(min = 0))]
   pub offset: Option<u16>
 }

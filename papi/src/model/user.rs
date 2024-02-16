@@ -1,14 +1,15 @@
 use std::io;
 use std::io::ErrorKind;
-use actix_web::web::Path;
 use bcrypt::DEFAULT_COST;
 use chrono::{Duration, NaiveDateTime, Utc};
 use jsonwebtoken::get_current_timestamp;
 use serde::Serialize;
 use sqlx::{PgPool};
+use ts_rs::TS;
 use crate::middleware::JwtAuth;
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, TS)]
+#[ts(export, export_to = "../src/lib/schema/User.ts")]
 pub struct User {
   username: String,
   email: String,
@@ -65,7 +66,7 @@ impl User {
   pub async fn register(db: &PgPool, username: &str, email: &str, password: &str) -> Result<Self, sqlx::Error> {
     let hash = bcrypt::hash(password, DEFAULT_COST);
     
-    if let Err(e) = hash {
+    if let Err(_) = hash {
       return Err(sqlx::Error::Io(io::Error::new(ErrorKind::InvalidData, "Could not hash password!")));
     }
     
@@ -91,7 +92,6 @@ impl User {
   pub async fn set_verified(&mut self, db: &PgPool, is_verified: bool) -> Result<(), sqlx::Error> {
     self.is_verified = true;
     
-    let now = Utc::now();
     if let Err(e) = sqlx::query!(
       r#"UPDATE "user" SET is_verified=$1 WHERE "user".username = $2"#, 
       is_verified,

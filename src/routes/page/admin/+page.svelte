@@ -5,7 +5,6 @@
 	import Dock from "$lib/components/Dock.svelte";
 	import AdminOnly from '$lib/components/AdminOnly.svelte';
 	
-	import * as Users from '$api/crud/user/endpoints';
 	import Meta from '$lib/components/Meta.svelte';
 	import { onMount } from 'svelte';
 	import TableModals from './TableModals.svelte';
@@ -31,10 +30,10 @@
 		queryParams.set("page", pageNumber.toString());
 		window.history.replaceState({}, '', `${window.location.pathname}?${queryParams.toString()}`);
 		
-		const users = await Users.GET.fetch({ offset: pageNumber * 10});
-		if (users.err) return console.error(users.err);
-		current_users = users.ok.users;
-		total = users.ok.total;
+		// const users = await Users.GET.fetch({ offset: pageNumber * 10});
+		// if (users.err) return console.error(users.err);
+		// current_users = users.ok.users;
+		// total = users.ok.total;
 	}
 </script>
 

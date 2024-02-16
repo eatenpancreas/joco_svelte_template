@@ -1,18 +1,16 @@
 <script>
 	import H1 from "$lib/components/H1.svelte";
-	import * as Index from "$api/endpoints";
 	import {onMount} from "svelte";
 	import Dock from "$lib/components/Dock.svelte";
 	import AppBounds from "$lib/components/AppBounds.svelte";
-	import Image from "svimg/Image.svelte";
-	import { env } from '$env/dynamic/public';
 	import Meta from '$lib/components/Meta.svelte';
+	import InternalFetch from '$lib/api/internalFetch';
 	
 	let message = "";
 	onMount(async () => {
-		const res = await Index.GET.fetch({});
-		if (res.err) { message = "Welcome, something went wrong... " + res.err.message }
-		else { message = res.ok.message }
+		const res = await InternalFetch("", "GET");
+		if (res.type === "err") { message = "Welcome, something went wrong... " + res.error.message }
+		else { message = res.data.message }
 	})
 </script>
 

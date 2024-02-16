@@ -19,3 +19,7 @@ jsonwebtoken = "9.2.0"
 bcrypt = "0.15.0"
 tokio = "1.36.0"
 time = "0.3.34"
+ts-rs = { version = "7.1", features = ["chrono-impl"] }
+actix-cors = "0.7.0"
+validator = { version = "0.16", features = ["derive"] }
+serde_with = "3.6.1"

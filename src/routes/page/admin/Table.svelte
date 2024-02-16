@@ -13,6 +13,7 @@
 	
 	let all_checked = false;
 	let main_checked = false;
+	let user: undefined = undefined;
 	
 	function onAllCheckedChange(val: boolean | "indeterminate") {
 		if (val === "indeterminate") return;

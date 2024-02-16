@@ -1,8 +1,10 @@
 
 use serde::Serialize;
 use sqlx::PgPool;
+use ts_rs::TS;
 
-#[derive(sqlx::FromRow, Serialize, Debug, Clone)]
+#[derive(sqlx::FromRow, Serialize, Debug, Clone, TS)]
+#[ts(export, export_to = "../src/lib/schema/UserPermission.ts")]
 pub struct UserPermission {
   name: String,
   level: i16,

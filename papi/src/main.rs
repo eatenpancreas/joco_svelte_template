@@ -8,8 +8,10 @@ mod tests;
 #[cfg(test)]
 mod seeders;
 mod handshake;
+mod lib;
 
 use std::io;
+use actix_cors::Cors;
 use actix_web::{App, HttpServer};
 use actix_web::middleware::Logger;
 use dotenv::dotenv;
@@ -37,6 +39,7 @@ async fn main() -> io::Result<()> {
     HttpServer::new(move || {
         App::new()
           .app_data(new_db(pool.clone()))
+          .wrap(Cors::permissive())
           .wrap(Logger::default())
           .service(index)
           .configure(routes::users::config)
