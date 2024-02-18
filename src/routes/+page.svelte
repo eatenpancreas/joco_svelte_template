@@ -4,11 +4,11 @@
 	import Dock from "$lib/components/Dock.svelte";
 	import AppBounds from "$lib/components/AppBounds.svelte";
 	import Meta from '$lib/components/Meta.svelte';
-	import InternalFetch from '$lib/api/internalFetch';
+	import index from '$api/get';
 	
 	let message = "";
 	onMount(async () => {
-		const res = await InternalFetch("", "GET");
+		const res = await index(null);
 		if (res.type === "err") { message = "Welcome, something went wrong... " + res.error.message }
 		else { message = res.data.message }
 	})

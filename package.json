@@ -14,8 +14,8 @@
 		"test:integration": "playwright test",
 		"test:unit": "vitest",
 		"component": "npx shadcn-svelte@latest add",
-		"apidev": "cargo run --manifest-path papi/Cargo.toml",
-		"apitest": "cargo test --manifest-path papi/Cargo.toml"
+		"apidev": "cargo run --manifest-path api/Cargo.toml",
+		"apitest": "cargo test --manifest-path api/Cargo.toml"
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.41.0",

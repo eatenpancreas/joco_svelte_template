@@ -3,7 +3,7 @@
     import * as Navbar from "$lib/components/navbar";
     import {Person} from "radix-icons-svelte";
     import AdminOnly from '$lib/components/AdminOnly.svelte';
-    import jwt from '$lib/api/jwt';
+    import jwt from '$lib/http/jwt';
     
     let user = "Log in";
 
