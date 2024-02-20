@@ -1,7 +1,7 @@
 import type { ErrorResponse } from '../handshake/ErrorResponse';
-import type { OkResponse } from '../handshake/OkResponse';
+import type { OkResponse } from '$lib/handshake/OkResponse';
 
-export type Response<T> = { type: "ok", data: OkResponse<T> } | { type: "err", error: ErrorResponse };
+export type Response<T> = { type: "ok", data?: T, message: string } | { type: "err", error: ErrorResponse };
 
 export async function request_inner<T>(host: string, path: string, searchParams: URLSearchParams, request_init: RequestInit): Promise<Response<T>> {
 	const response = await fetch(host + path + "?" + searchParams.toString(), request_init);
@@ -29,6 +29,12 @@ export async function request_inner<T>(host: string, path: string, searchParams:
 		}
 	}
 
-	const json = await response.json();
-	return { type: "ok", data: json}
+	const json = await response.json() as OkResponse<T>;
+	
+	if (json.ok.ok_kind == "data") {
+		return { type: "ok", message: json.message, data: json.ok.response }
+	} else if (json.ok.ok_kind == 'redirected') {
+		window.location.href = window.location.host + "/" + json.ok.response.to;
+	}
+	return { type: "ok", message: json.message }
 }

@@ -4,11 +4,11 @@ use actix_web::web::Data;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use validator::{Validate};
+use api_lib::handshake::{ErrorOrigin, ErrorResponse};
 use api_proc::endpoint;
 use crate::db::Database;
-use crate::handshake::{ErrorOrigin, ErrorResponse};
 use crate::model::User;
-use crate::routes::auth::{authenticate_login};
+use crate::routes::auth::{authenticate_login, Authenticated};
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[serde(tag = "login_type")]
@@ -38,7 +38,7 @@ struct LoginFormEmail {
   password: String,
 }
 
-#[endpoint("/auth/login", "post", (), ())]
+#[endpoint("/auth/login", "post", LoginForm, Authenticated, ())]
 #[post("/login")]
 pub async fn login(post: web::Json<LoginForm>, db: Data<Database>) -> HttpResponse {
   let (user, pass, validated) = match &post.0 {

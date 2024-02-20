@@ -4,12 +4,12 @@ use actix_web::web::{Data};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use validator::Validate;
+use api_lib::env::ApiEnv;
+use api_lib::handshake::{ErrorOrigin, ErrorResponse, OkResponse, OkResponseKind};
 use api_proc::endpoint;
 use crate::db::Database;
-use crate::env::ApiEnv;
-use crate::handshake::{ErrorOrigin, ErrorResponse, OkResponse, OkResponseKind};
 use crate::model::User;
-use crate::routes::auth::authenticate_login;
+use crate::routes::auth::{authenticate_login, Authenticated};
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS, Validate)]
 #[ts(export, export_to = "../src/lib/handshake/schema/RegisterForm.ts")]
@@ -22,11 +22,14 @@ struct RegisterForm {
   password: String
 }
 
-#[endpoint("/auth/register", "post", (), ())]
+#[endpoint("/auth/register", "post", RegisterForm, Authenticated, ())]
 #[post("/register")]
 pub async fn register(post: web::Json<RegisterForm>, db: Data<Database>) -> HttpResponse {
   if let Some(_) = User::get(&db.pool, &post.username).await {
-    return HttpResponse::Conflict().json(ErrorResponse::public_fatal("User already exists!", ErrorOrigin::User));
+    return HttpResponse::Conflict().json(ErrorResponse::public_fatal("Username already exists!", ErrorOrigin::User));
+  }
+  if let Some(_) = User::get_email(&db.pool, &post.email).await {
+    return HttpResponse::Conflict().json(ErrorResponse::public_fatal("Email already exists!", ErrorOrigin::User));
   }
 
   let registered = User::register(&db.pool, &*post.username, &*post.email, &*post.password).await;

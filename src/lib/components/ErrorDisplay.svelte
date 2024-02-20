@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { ExclamationTriangle } from 'radix-icons-svelte';
 	import * as Alert from "$lib/shadcn/ui/alert";
-	export let error: string | undefined;
+	import type { ErrorResponse } from '$lib/handshake/ErrorResponse';
+	export let error: ErrorResponse | undefined;
 	export let title = 'Error';
 </script>
 

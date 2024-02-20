@@ -329,6 +329,7 @@ version = "0.1.0"
 dependencies = [
  "actix-cors",
  "actix-web",
+ "api-lib",
  "api-proc",
  "bcrypt",
  "chrono",
@@ -343,6 +344,18 @@ dependencies = [
  "tokio",
  "ts-rs",
  "uuid",
+ "validator",
+]
+
+[[package]]
+name = "api-lib"
+version = "0.1.0"
+dependencies = [
+ "actix-web",
+ "dotenv",
+ "serde",
+ "sqlx",
+ "ts-rs",
  "validator",
 ]
 

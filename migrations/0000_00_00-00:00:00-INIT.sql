@@ -14,10 +14,10 @@ CREATE TABLE "user" (
 );
 
 CREATE TABLE "user_permission" (
-    user_id VARCHAR(64) NOT NULL UNIQUE,
-    permission_id VARCHAR(25) NOT NULL UNIQUE,
+    user_id VARCHAR(64) NOT NULL,
+    permission_id VARCHAR(25) NOT NULL,
 
     CONSTRAINT user_permission_pkey PRIMARY KEY (user_id, permission_id),
-    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES "user"(username),
-    CONSTRAINT fk_permission FOREIGN KEY (permission_id) REFERENCES "permission"(name)
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES public."user"(username) ON DELETE CASCADE,
+    CONSTRAINT fk_permission FOREIGN KEY (permission_id) REFERENCES "permission"(name) ON DELETE CASCADE
 );

@@ -5,6 +5,7 @@ use actix_web::{HttpResponse};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use validator::{Validate, ValidationErrors};
+use std::borrow::Cow;
 
 #[derive(Serialize, TS)]
 #[ts(export, export_to = "../src/lib/handshake/ErrorResponse.ts")]
@@ -107,7 +108,7 @@ pub enum ErrorKind {
 
 #[derive(Serialize, Debug, TS)]
 #[ts(export, export_to = "../src/lib/handshake/Validation.ts")]
-struct Validation {
+pub struct Validation {
   fields: HashMap<String, Vec<ValidationError>>,
 }
 
@@ -137,14 +138,27 @@ impl<T: Serialize + TS> OkResponse<T> {
   }
 }
 
-#[derive(Deserialize, Serialize, TS, Validate)]
+#[derive(Deserialize, Serialize, TS, Validate, Debug, Clone)]
 #[ts(export, export_to = "../src/lib/handshake/DbRange.ts")]
 pub struct DbRange {
   #[validate(range(min = 1, max = 40))]
   pub limit: Option<u16>,
   #[validate(range(min = 0))]
-  pub offset: Option<u16>
-}use std::borrow::Cow;
+  pub offset: Option<u16>,
+  pub search: Option<String>,
+  pub order_by: Option<String>,
+  pub direction: Option<Direction>
+}
+
+
+#[derive(Deserialize, Serialize, TS, Debug, Clone)]
+#[ts(export, export_to = "../src/lib/handshake/Direction.ts")]
+pub enum Direction {
+  #[serde(rename = "asc")]
+  Asc,
+  #[serde(rename = "desc")]
+  Desc,
+}
 
 #[derive(Debug, PartialEq, Clone, Serialize, TS)]
 #[ts(export, export_to = "../src/lib/handshake/ValidationError.ts")]

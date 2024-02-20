@@ -1,30 +1,29 @@
 <script lang="ts">
-	// import { client_auth } from '$api/auth';
-	// import * as Permissions from '$api/auth/permissions/endpoints';
+	import user from '$lib/http/user';
+	import getPermissions from '$api/users/{username}/permissions/get';
 
-	// let is_admin = false;
-	export let onAuthenticate: () => void = () => {};
+	let is_admin = false;
 
-	// client_auth.subscribe((auth) => {
-	// 	if (auth != null) {
-	// 		get_perms(auth.username);
-	// 	}
-	// 	else {
-	// 		is_admin = false;
-	// 	}
-	// });
-	//
-	// async function get_perms(username: string) {
-	// 	const perms = await Permissions.GET.fetch({ username });
-	// 	if (perms.ok) {
-	// 		is_admin = perms.ok.permissions.some((perm) => perm.permission === 'admin' || perm.level > 100);
-	// 		if (is_admin) {
-	// 			onAuthenticate();
-	// 		}
-	// 	}
-	// }
+	user.subscribe(u => {
+		if (u) {
+			get_perms(u.username)
+		} else {
+			is_admin = false;
+		}
+	});
+
+	async function get_perms(username: string) {
+		const perms = await getPermissions(null, username);
+		if (perms.type === 'ok') {
+			if (perms.data) {
+				is_admin = perms.data.permissions.findIndex(p => p.level >= 8) !== -1;
+			} else {
+				is_admin = false;
+			}
+		}
+	}
 </script>
 
-<!--{#if is_admin}-->
+{#if is_admin}
 	<slot />
-<!--{/if}-->
+{/if}

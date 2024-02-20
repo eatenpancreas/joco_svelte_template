@@ -9,6 +9,7 @@ struct Args {
     method: LitStr,
     in_t: Type,
     out_t: Type,
+    query_t: Type,
 }
 
 impl Parse for Args {
@@ -20,10 +21,12 @@ impl Parse for Args {
         let in_t = input.parse()?;
         let _ = input.parse::<Token![,]>();
         let out_t = input.parse()?;
+        let _ = input.parse::<Token![,]>();
+        let query_t = input.parse()?;
         
         Ok(Args {
             route, method,
-            in_t, out_t,
+            in_t, out_t, query_t
         })
     }
 }
@@ -42,6 +45,7 @@ pub fn endpoint(input: TokenStream, item: TokenStream) -> TokenStream {
     let method_val = method.value().to_uppercase();
     let in_t = args.in_t;
     let out_t = args.out_t;
+    let query_t = args.query_t;
     
     let route_raw = format!("../src/lib/endpoint_defines{}/{}.ts", route.value(), method_val);
     let route_full = LitStr::new(route_raw.as_str(), Span::call_site());
@@ -50,13 +54,14 @@ pub fn endpoint(input: TokenStream, item: TokenStream) -> TokenStream {
         #[ts(export, export_to = #route_full)]
         struct #struct_name {
           in_type: #in_t,
-          out_data_type: #out_t
+          out_data_type: #out_t,
+          query_type: #query_t
         }
         
         #[cfg(test)]
         #[test]
         fn #test_name() {
-          crate::handshake::endpoint::write_endpoint(#method, #route, #struct_name_str);
+          api_lib::handshake::endpoint::write_endpoint(#method, #route, #struct_name_str);
         }
     };
 

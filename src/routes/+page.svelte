@@ -10,7 +10,7 @@
 	onMount(async () => {
 		const res = await index(null);
 		if (res.type === "err") { message = "Welcome, something went wrong... " + res.error.message }
-		else { message = res.data.message }
+		else { message = res.message }
 	})
 </script>
 

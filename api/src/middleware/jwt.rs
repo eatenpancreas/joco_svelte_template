@@ -4,15 +4,16 @@ use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Tr
 use actix_web::error::InternalError;
 use actix_web::http::header::HeaderMap;
 use actix_web::{Error, HttpMessage, HttpResponse};
+use actix_web::cookie::Cookie;
 use actix_web::web::{Data};
 use chrono::{DateTime, Utc};
 use futures_util::future::LocalBoxFuture;
 use jsonwebtoken::{Algorithm, decode, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
+use api_lib::env::ApiEnv;
+use api_lib::handshake::{ErrorOrigin, ErrorResponse};
 use crate::db::Database;
-use crate::env::ApiEnv;
-use crate::handshake::{ErrorOrigin, ErrorResponse};
 use crate::model::{User, UserPermission};
 
 type PermissionCheckCallback = fn(Vec<UserPermission>) -> bool;
@@ -79,11 +80,12 @@ impl<S, B> Service<ServiceRequest> for JwtMiddleware<S>
     Box::pin(async move {
       let db: &Data<Database> = req.app_data().unwrap();
       let pool = db.pool.clone();
+      let cookies = req.cookies().unwrap().clone();
       let headers = req.headers().clone();
       let res = {
         let mut extensions = req.extensions_mut();
 
-        match authorize(pool, headers).await {
+        match authorize(pool, cookies, headers).await {
           Ok(u) => {
             extensions.insert(u);
             Ok(())
@@ -101,19 +103,21 @@ impl<S, B> Service<ServiceRequest> for JwtMiddleware<S>
 }
 
 async fn authorize(
-  pool: Pool<Postgres>, headers: HeaderMap
+  pool: Pool<Postgres>, cookies: Vec<Cookie<'_>>, headers: HeaderMap
 ) -> Result<AuthorizedUser, Error> {
-  let auth_header = headers.get("Authorization").ok_or(unauthorized("No Authorization header present!", ErrorOrigin::Auth))?
-    .to_str().map_err(|_| unauthorized("Could not decode Authorization header!", ErrorOrigin::Auth))?;
+  let auth_user = headers.get("Authorization-User").ok_or(unauthorized("No Authorization user present!", ErrorOrigin::Auth))?;
+  let auth_header = cookies.iter().find(|c| c.name() == "X9jwtAPI").ok_or(unauthorized("No Authorization cookie present!", ErrorOrigin::Auth))?;
   
-  if !(auth_header.starts_with("Bearer ")) { return Err(unauthorized("Authorisation requires Bearer token!", ErrorOrigin::Auth)) }
-  
-  let token = auth_header[7..].to_string();
+  let token = auth_header.value().to_string();
   let secret = ApiEnv::jwt_secret();
   let key = DecodingKey::from_secret(secret.as_bytes());
   let validation = Validation::new(Algorithm::HS256);
   let decoding = decode::<JwtAuth>(&*token, &key, &validation).map_err(
     |e| unauthorized(format!("Token is invalid! {e}").as_str(), ErrorOrigin::Auth))?;
+  
+  if decoding.claims.username != auth_user.to_str().unwrap() {
+    return Err(unauthorized("Token is not correct for this user!", ErrorOrigin::Auth));
+  }
   
   let user = User::get(&pool, &decoding.claims.username).await
     .ok_or(unauthorized("Could not find user!", ErrorOrigin::User))?;

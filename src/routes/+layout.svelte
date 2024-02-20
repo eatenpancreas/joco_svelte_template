@@ -3,12 +3,18 @@
     import * as Navbar from "$lib/components/navbar";
     import {Person} from "radix-icons-svelte";
     import AdminOnly from '$lib/components/AdminOnly.svelte';
-    import jwt from '$lib/http/jwt';
+    import userStore from '$lib/http/user';
+    import { onMount } from 'svelte';
     
     let user = "Log in";
 
-    jwt.subscribe((auth) => {
+    userStore.subscribe((auth) => {
         user = (auth == undefined ? "Log in" : auth.username);
+    });
+    
+    onMount(() => {
+        let us = localStorage.getItem('username');
+        userStore.set(us ? { username: us } : undefined);
     });
 </script>
 
@@ -43,9 +49,9 @@
 <div class="min-h-screen font-brevia">
     <Navbar.Root title="Svelte Template">
         <Navbar.Button href="/">Home</Navbar.Button>
-        <AdminOnly><Navbar.Button href="/page/admin">Admin</Navbar.Button></AdminOnly>
-        <Navbar.Button href="/page/info">Info</Navbar.Button>
-        <Navbar.Button href="/page/profile"><Person/> {user}</Navbar.Button>
+        <AdminOnly><Navbar.Button href="/admin">Admin</Navbar.Button></AdminOnly>
+        <Navbar.Button href="/info">Info</Navbar.Button>
+        <Navbar.Button href="/profile"><Person/> {user}</Navbar.Button>
     </Navbar.Root>
     <div class="flex flex-col relative justify-center items-center text-foreground pb-16 pt-28">
         <slot/>

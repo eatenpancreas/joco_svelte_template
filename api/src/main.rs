@@ -1,21 +1,19 @@
 mod routes;
-pub mod db;
 pub mod model;
 mod middleware;
-mod env;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod seeders;
-mod handshake;
 
 use std::io;
 use actix_cors::Cors;
 use actix_web::{App, HttpServer};
 use actix_web::middleware::Logger;
 use dotenv::dotenv;
+use api_lib::db;
+use api_lib::env::ApiEnv;
 use crate::db::new_db;
-use crate::env::ApiEnv;
 use crate::routes::index;
 
 #[actix_web::main]
@@ -29,16 +27,10 @@ async fn main() -> io::Result<()> {
 
     let pool = db::connect().await?;
     
-    if let Err(e) = sqlx::migrate!()
-      .run(&pool)
-      .await {
-        println!("-- Migration issue | {e} --")
-    }
-    
     HttpServer::new(move || {
         App::new()
           .app_data(new_db(pool.clone()))
-          .wrap(Cors::permissive())
+          .wrap(Cors::permissive().supports_credentials())
           .wrap(Logger::default())
           .service(index)
           .configure(routes::users::config)

@@ -2,46 +2,51 @@
 use crate::middleware::{AuthorizedUser, Jwt};
 use actix_web::{delete, get, HttpResponse, web};
 use actix_web::web::{Data, Query, ReqData};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+use validator::Validate;
+use api_lib::handshake::{DbRange, ErrorOrigin, ErrorResponse, OkResponse, OkResponseKind};
 use api_proc::endpoint;
 use crate::db::Database;
-use crate::handshake::{DbRange, ErrorOrigin, ErrorResponse, OkResponse, OkResponseKind};
 use crate::model::{User, UserPermission};
 
 pub fn config(cfg: &mut web::ServiceConfig) {
   cfg.service(
     web::scope("/users")
       .wrap(Jwt::default())
-      .service(get_all)
+      .service(get_all_users)
       .service(
         web::scope("/{username}")
-          .service(get)
-          .service(delete)
+          .service(get_user)
+          .service(delete_user)
           .service(get_user_permissions)
       )
   );
 }
 
 
-#[endpoint("/users", "get", (), ())]
+#[endpoint("/users", "get", (), Vec<User>, DbRange)]
 #[get("/")]
-async fn get_all(range: Query<DbRange>, db: Data<Database>, au: ReqData<AuthorizedUser>) -> HttpResponse {
+async fn get_all_users(range: Query<DbRange>, db: Data<Database>, au: ReqData<AuthorizedUser>) -> HttpResponse {
   let au = au.into_inner();
   if !au.has_level(8) {
     return HttpResponse::Unauthorized().json(ErrorResponse::public_fatal("Not authorized!", ErrorOrigin::Auth));
   }
+  
+  if let Err(invalid_range) = range.validate() {
+    return HttpResponse::BadRequest().json(ErrorResponse::validation("Invalid range!", invalid_range));
+  }
 
-  if let Some(u) = User::get_all(&db.pool, range.limit.unwrap_or(40) as i64, range.offset.unwrap_or(0) as i64).await {
+  if let Some(u) = User::get_all(&db.pool, range.into_inner()).await {
     return OkResponse::new_send("Users found!", OkResponseKind::Data(u));
   }
 
   HttpResponse::InternalServerError().json(ErrorResponse::public_fatal("Could not get users!", ErrorOrigin::Db))
 }
 
-#[endpoint("/users/{username}", "get", (), ())]
+#[endpoint("/users/{username}", "get", (), User, ())]
 #[get("/")]
-async fn get(username: web::Path<String>, db: Data<Database>, au: ReqData<AuthorizedUser>) -> HttpResponse {
+async fn get_user(username: web::Path<String>, db: Data<Database>, au: ReqData<AuthorizedUser>) -> HttpResponse {
   let au = au.into_inner();
   if !au.has_level(8) && !au.is_username(&username) {
     return HttpResponse::Unauthorized().json(ErrorResponse::public_fatal("Not authorized!", ErrorOrigin::Auth));
@@ -54,9 +59,9 @@ async fn get(username: web::Path<String>, db: Data<Database>, au: ReqData<Author
   HttpResponse::InternalServerError().json(ErrorResponse::public_fatal("Could not get users!", ErrorOrigin::Db))
 }
 
-#[endpoint("/users/{username}", "delete", (), ())]
+#[endpoint("/users/{username}", "delete", (), (), ())]
 #[delete("/")]
-async fn delete(username: web::Path<String>, db: Data<Database>, au: ReqData<AuthorizedUser>) -> HttpResponse {
+async fn delete_user(username: web::Path<String>, db: Data<Database>, au: ReqData<AuthorizedUser>) -> HttpResponse {
   let au = au.into_inner();
   if !au.has_level(8) && !au.is_username(&username) {
     return HttpResponse::Unauthorized().json(ErrorResponse::public_fatal("Not authorized!", ErrorOrigin::Auth));
@@ -71,13 +76,14 @@ async fn delete(username: web::Path<String>, db: Data<Database>, au: ReqData<Aut
   HttpResponse::InternalServerError().json(ErrorResponse::public_fatal("Could not delete user!", ErrorOrigin::Db))
 }
 
-#[derive(sqlx::FromRow, Serialize, Debug, Clone, TS)]
+#[derive(sqlx::FromRow, Serialize, Deserialize, Debug, Clone, TS)]
+#[ts(export, export_to = "../src/lib/handshake/schema/UserPermissions.ts")]
 struct UserPermissions {
   username: String,
   permissions: Vec<UserPermission>
 }
 
-#[endpoint("/users/{username}/permissions", "get", (), ())]
+#[endpoint("/users/{username}/permissions", "get", (), UserPermissions, DbRange)]
 #[get("/permissions")]
 async fn get_user_permissions(username: web::Path<String>, db: Data<Database>, au: ReqData<AuthorizedUser>) -> HttpResponse {
   let au = au.into_inner();
