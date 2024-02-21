@@ -71,11 +71,31 @@ file. Make sure to use the same passwords as defined in the `.env` file.
 ## FOLDER STRUCTURE
 
 * `.` - Contains the frontend and the cargo workspace
-* `api` - The backend
-* `api-lib` - The backend library
-* `api-proc` - Some procedural macros
-* `src` - Sveltekit frontend
-* `src/api` - The generated API bindings, accessible by `$api` in TS or Svelte files
-* `static` - Static files
-* `tests` - Integration tests
+  * `api` - The backend
+  * `api-lib` - The backend library
+  * `api-proc` - Some procedural macros
+  * `src` - Sveltekit frontend
+    * `/api` - The generated API bindings, accessible by `$api` in TS or Svelte files
+  * `static` - Static files
+  * `tests` - Integration tests
 
+
+## Deployment
+
+Make sure you have a postgres DB running, and have a valid `.env.production` according to 
+the `.env.example` file. Also make sure to have a valid `compose.yaml` file.
+
+For docker, unfortunately postgres needs to be running already when the backend starts.
+This is due to the fact that the backend is started before the database is created and SQLX
+tries to connect to the database. This is a known issue and will be fixed in the future.
+
+
+## Todos
+
+- [ ] Add more tests
+- [ ] Add more documentation
+- [ ] Email authentication
+- [ ] Built-in admin panel
+- [ ] Resend email verification & Add a way to change email / password
+- [ ] Error handling in the frontend
+- [ ] Github actions for CI/CD and fixing the docker-compose issue
