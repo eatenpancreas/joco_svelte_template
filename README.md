@@ -15,7 +15,7 @@
     <td>Rust</td>
     <td>Actix</td>
     <td>Postgres</td>
-    <td>Svelte</td>
+    <td>Svelte(kit)</td>
   </tr>
   <tr>
     <td>Tailwind</td>
