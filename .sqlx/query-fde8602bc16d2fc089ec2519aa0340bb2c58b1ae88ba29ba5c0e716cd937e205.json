@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE \"user\" SET last_login=$1 WHERE \"user\".username = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamp",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fde8602bc16d2fc089ec2519aa0340bb2c58b1ae88ba29ba5c0e716cd937e205"
+}

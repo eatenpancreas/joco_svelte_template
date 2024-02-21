@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE \"user\" SET is_verified=$1 WHERE \"user\".username = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bool",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "59ad3dddfd51a5a36294c175486cf558ad45832b2ccb47ec90b429dc13d71282"
+}

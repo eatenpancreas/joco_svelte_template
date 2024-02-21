@@ -32,7 +32,7 @@ async fn get_all_users(range: Query<DbRange>, db: Data<Database>, au: ReqData<Au
   if !au.has_level(8) {
     return HttpResponse::Unauthorized().json(ErrorResponse::public_fatal("Not authorized!", ErrorOrigin::Auth));
   }
-  
+
   if let Err(invalid_range) = range.validate() {
     return HttpResponse::BadRequest().json(ErrorResponse::validation("Invalid range!", invalid_range));
   }
@@ -66,7 +66,7 @@ async fn delete_user(username: web::Path<String>, db: Data<Database>, au: ReqDat
   if !au.has_level(8) && !au.is_username(&username) {
     return HttpResponse::Unauthorized().json(ErrorResponse::public_fatal("Not authorized!", ErrorOrigin::Auth));
   }
-  
+
   if let Some(u) = User::get(&db.pool, &username).await {
     if let Ok(_) = u.delete(&db.pool).await {
       return OkResponse::new_send("Deleted user!", OkResponseKind::<()>::Simple)
@@ -90,7 +90,7 @@ async fn get_user_permissions(username: web::Path<String>, db: Data<Database>, a
   if !au.has_level(8) && !au.is_username(&username) {
     return HttpResponse::Unauthorized().json(ErrorResponse::public_fatal("Not authorized!", ErrorOrigin::Auth));
   }
-  
+
   match UserPermission::from_username(&db.pool, &username).await {
     Ok(perms) => {
       OkResponse::new_send(format!("Showing permissions for {username}"), OkResponseKind::Data( UserPermissions{

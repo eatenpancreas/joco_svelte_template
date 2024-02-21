@@ -18,6 +18,7 @@ use crate::routes::index;
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {
+    println!("Connecting...");
     dotenv().unwrap();
     env_logger::init();
     if !ApiEnv::test_all() { return Ok(()); }
@@ -27,6 +28,7 @@ async fn main() -> io::Result<()> {
 
     let pool = db::connect().await?;
     
+    println!("Running API");
     HttpServer::new(move || {
         App::new()
           .app_data(new_db(pool.clone()))
@@ -35,7 +37,7 @@ async fn main() -> io::Result<()> {
           .service(index)
           .configure(routes::users::config)
           .configure(routes::auth::config)
-    }).bind(("127.0.0.1", 8080))?
+    }).bind((ApiEnv::api_address(), ApiEnv::api_port()))?
       .run()
       .await
 }

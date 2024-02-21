@@ -5,7 +5,7 @@ use actix_web::error::InternalError;
 use actix_web::http::header::HeaderMap;
 use actix_web::{Error, HttpMessage, HttpResponse};
 use actix_web::cookie::Cookie;
-use actix_web::web::{Data};
+use actix_web::web::Data;
 use chrono::{DateTime, Utc};
 use futures_util::future::LocalBoxFuture;
 use jsonwebtoken::{Algorithm, decode, DecodingKey, Validation};
@@ -16,13 +16,11 @@ use api_lib::handshake::{ErrorOrigin, ErrorResponse};
 use crate::db::Database;
 use crate::model::{User, UserPermission};
 
-type PermissionCheckCallback = fn(Vec<UserPermission>) -> bool;
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct JwtAuth {
   pub(crate) username: String,
   pub(crate) db_sign_moment: DateTime<Utc>,
-  
+
   pub(crate) exp: u64,
   pub(crate) iat: u64,
   pub(crate) nbf: u64
@@ -73,7 +71,7 @@ impl<S, B> Service<ServiceRequest> for JwtMiddleware<S>
     if ApiEnv::skip_auth() {
       return Box::pin(self.service.call(req));
     }
-    
+
     let svc = self.service.clone();
 
     // Box::pin(self.service.call(req))
@@ -92,7 +90,7 @@ impl<S, B> Service<ServiceRequest> for JwtMiddleware<S>
           } Err(e) => Err(e)
         }
       };
-      
+
       match res {
         Ok(_) => {
           svc.call(req).await
@@ -107,21 +105,21 @@ async fn authorize(
 ) -> Result<AuthorizedUser, Error> {
   let auth_user = headers.get("Authorization-User").ok_or(unauthorized("No Authorization user present!", ErrorOrigin::Auth))?;
   let auth_header = cookies.iter().find(|c| c.name() == "X9jwtAPI").ok_or(unauthorized("No Authorization cookie present!", ErrorOrigin::Auth))?;
-  
+
   let token = auth_header.value().to_string();
   let secret = ApiEnv::jwt_secret();
   let key = DecodingKey::from_secret(secret.as_bytes());
   let validation = Validation::new(Algorithm::HS256);
   let decoding = decode::<JwtAuth>(&*token, &key, &validation).map_err(
     |e| unauthorized(format!("Token is invalid! {e}").as_str(), ErrorOrigin::Auth))?;
-  
+
   if decoding.claims.username != auth_user.to_str().unwrap() {
     return Err(unauthorized("Token is not correct for this user!", ErrorOrigin::Auth));
   }
-  
+
   let user = User::get(&pool, &decoding.claims.username).await
     .ok_or(unauthorized("Could not find user!", ErrorOrigin::User))?;
-  
+
   if !user.is_verified() {
     return Err(unauthorized("User is not verified!", ErrorOrigin::User));
   }
@@ -129,12 +127,12 @@ async fn authorize(
   if user.last_login().timestamp() != decoding.claims.db_sign_moment.timestamp() {
     return Err(unauthorized("Token is old!", ErrorOrigin::Auth));
   }
-  
+
   let perms = UserPermission::from_username(&pool, user.username().clone().as_str()).await;
   if perms.is_err() {
     return Err(unauthorized("Could not get permissions!", ErrorOrigin::Perms));
   }
-  
+
   // send user with permissions to request
   Ok(AuthorizedUser {
     u: user,
@@ -155,7 +153,7 @@ impl AuthorizedUser {
   pub fn has_level(&self, level: i16) -> bool {
     self.permissions.iter().any(|perm| perm.level() >= level)
   }
-  
+
   pub fn has_permission(&self, permission: &str) -> bool {
     self.permissions.iter().any(|perm| perm.name() == permission)
   }

@@ -36,7 +36,7 @@ enum Dir {
     VariableDir(String)
 }
 
-fn function_decl(fn_name: String, method: String, raw_path: &str) -> String {
+fn function_decl(mut fn_name: String, method: String, raw_path: &str) -> String {
     // TODO: EXTRACT DYNAMIC VARIABLES FROM PATH
     let mut vars = vec![];
     let mut new_dirs = vec![];
@@ -50,6 +50,10 @@ fn function_decl(fn_name: String, method: String, raw_path: &str) -> String {
         } else {
             new_dirs.push(ValidDir(dir.to_string()))
         }
+    }
+    
+    if fn_name == "delete" {
+        fn_name = "del".to_string();
     }
 
     let fn_init = format!("export default async function {fn_name}(in_val: {method}['in_type'],");

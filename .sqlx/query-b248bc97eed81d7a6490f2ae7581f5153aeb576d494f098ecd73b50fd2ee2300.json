@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO \"user_permission\" (user_id, permission_id) VALUES ($1, 'guest'); ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b248bc97eed81d7a6490f2ae7581f5153aeb576d494f098ecd73b50fd2ee2300"
+}

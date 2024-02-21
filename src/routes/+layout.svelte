@@ -5,13 +5,13 @@
     import AdminOnly from '$lib/components/AdminOnly.svelte';
     import userStore from '$lib/http/user';
     import { onMount } from 'svelte';
-    
+
     let user = "Log in";
 
     userStore.subscribe((auth) => {
         user = (auth == undefined ? "Log in" : auth.username);
     });
-    
+
     onMount(() => {
         let us = localStorage.getItem('username');
         userStore.set(us ? { username: us } : undefined);

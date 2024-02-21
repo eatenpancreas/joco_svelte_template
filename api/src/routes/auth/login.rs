@@ -22,7 +22,7 @@ pub(crate) enum LoginForm {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS, Validate)]
 #[ts(export, export_to = "../src/lib/handshake/schema/LoginFormUsername.ts")]
-struct LoginFormUsername {
+pub struct LoginFormUsername {
   #[validate(length(min = 2, max = 64))]
   username: String,
   #[validate(length(min = 6, max = 64))]
@@ -31,7 +31,7 @@ struct LoginFormUsername {
 
 #[derive(Clone, Debug, Serialize, Deserialize, Validate, TS)]
 #[ts(export, export_to = "../src/lib/handshake/schema/LoginFormEmail.ts")]
-struct LoginFormEmail {
+pub struct LoginFormEmail {
   #[validate(email)]
   email: String,
   #[validate(length(min = 6, max = 64))]
@@ -45,7 +45,7 @@ pub async fn login(post: web::Json<LoginForm>, db: Data<Database>) -> HttpRespon
     LoginForm::WithUsername(u) => (User::get(&db.pool, &u.username).await, u.password.as_str(), u.validate()),
     LoginForm::WithEmail(e) => (User::get_email(&db.pool, &e.email).await, e.password.as_str(), e.validate()),
   };
-  
+
   if let Err(e) = validated {
     return HttpResponse::BadRequest().json(ErrorResponse::validation("Invalid input!", e))
   }

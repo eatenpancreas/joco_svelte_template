@@ -17,6 +17,18 @@ impl ApiEnv {
   fn _database_url() -> Result<String, String> {
     env::var("DATABASE_URL").map_err(|x| x.to_string())
   }
+
+  pub fn api_address() -> String { Self::_api_address().unwrap() }
+  fn _api_address() -> Result<String, String> {
+    env::var("API_ADDRESS").map_err(|x| x.to_string())
+  }
+
+  pub fn api_port() -> u16 { Self::_api_port().unwrap() }
+  fn _api_port() -> Result<u16, String> {
+    let var = env::var("API_PORT").map_err(|x| x.to_string())?;
+    var.parse::<u16>().map_err(|x| x.to_string())
+  }
+  
   pub fn jwt_secret() -> String { Self::_jwt_secret().unwrap() }
   fn _jwt_secret() -> Result<String, String> {
     env::var("JWT_SECRET").map_err(|x| x.to_string())
@@ -26,7 +38,9 @@ impl ApiEnv {
     log(Self::_database_url(), "DATABASE_URL") &&
     log(Self::_skip_auth(), "SKIP_AUTH") &&
     log(Self::_jwt_secret(), "JWT_SECRET") &&
-    log(Self::_email_auth_enabled(), "EMAIL_AUTH_ENABLED")
+    log(Self::_email_auth_enabled(), "EMAIL_AUTH_ENABLED") &&
+    log(Self::_api_address(), "API_ADDRESS") &&
+    log(Self::_api_port(), "API_PORT")
   }
 }
 

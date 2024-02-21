@@ -51,4 +51,3 @@ pub async fn register(post: web::Json<RegisterForm>, db: Data<Database>) -> Http
     authenticate_login(&registered, &db.pool).await
   }
 }
-

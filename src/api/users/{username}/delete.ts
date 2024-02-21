@@ -7,7 +7,7 @@ import { type Response, request_inner } from '$lib/http/response';
 const method = 'delete'; 
 const host = import.meta.env.VITE_API_URL?? ''; 
 import type { __Endpoint_delete_user as DELETE } from '$lib/endpoint_defines//users/{username}/DELETE'; 
-export default async function delete(in_val: DELETE['in_type'], username: string,query?: DELETE['query_type']): Promise<Response<DELETE['out_data_type']>> {
+export default async function del(in_val: DELETE['in_type'], username: string,query?: DELETE['query_type']): Promise<Response<DELETE['out_data_type']>> {
   const params = new URLSearchParams();
   for (const key in query) {
     params.set(key, query[key]);
