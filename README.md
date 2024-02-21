@@ -37,6 +37,8 @@
 TRAPS focuses on runtime safety, DX, UX, performance and scalability. It leverages the strength
 of Rust and Typescript to provide a robust and secure backend and frontend.
 
+![Joco Svelte Template](./static/screenshot.png)
+
 ## FEATURES
 - [x] Secure HTTP-Only-Cookie-based JWT authentication built-in
 - [x] Typesafe and secure SQL queries with sqlx
