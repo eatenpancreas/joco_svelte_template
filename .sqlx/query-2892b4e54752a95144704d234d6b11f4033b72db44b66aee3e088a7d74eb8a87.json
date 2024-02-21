@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO \"user\" (username, email, password, is_verified) VALUES ($1, $2, $3, false); ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2892b4e54752a95144704d234d6b11f4033b72db44b66aee3e088a7d74eb8a87"
+}

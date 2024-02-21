@@ -1,0 +1,13 @@
+[package]
+name = "api-lib"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+dotenv = "0.15.0"
+actix-web = "4.5.1"
+sqlx = { version = "0.7.3", features = ["postgres", "chrono", "uuid", "macros", "runtime-tokio-native-tls"] }
+serde = { version = "1.0.196", features = ["derive"] }
+ts-rs = "7.1.1"
+validator = { version = "0.16", features = ["derive"] }

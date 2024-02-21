@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "api",
+    "api-proc",
+    "api-lib",
+]

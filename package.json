@@ -6,20 +6,32 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
-		"test": "npm run test:integration && npm run test:unit",
+		
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		
 		"lint": "prettier --plugin-search-dir . --check . && eslint .",
 		"format": "prettier --plugin-search-dir . --write .",
+
+		"test": "npm run test:integration && npm run test:unit",
 		"test:integration": "playwright test",
 		"test:unit": "vitest",
-		"component": "npx shadcn-svelte@latest add"
+		
+		"component": "npx shadcn-svelte@latest add",
+		
+		"api:run": "cargo run",
+		"ar": "cargo run",
+		"api:build": "cargo build",
+		"ab": "cargo build",
+		"api:pull": "cargo test",
+		"ap": "cargo test",
+		"migrate": "cargo test run_migrations --manifest-path ./api-lib/Cargo.toml"
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.41.0",
 		"@prisma/client": "^5.8.1",
 		"@radix-ui/react-navigation-menu": "^1.1.4",
-		"@sveltejs/adapter-node": "^3.0.1",
+		"@sveltejs/adapter-node": "4.0.1",
 		"@sveltejs/kit": "^2.3.3",
 		"@sveltejs/vite-plugin-svelte": "^3.0.1",
 		"@types/bcryptjs": "^2.4.6",
@@ -28,21 +40,15 @@
 		"@typescript-eslint/eslint-plugin": "^6.19.0",
 		"@typescript-eslint/parser": "^6.19.0",
 		"autoprefixer": "^10.4.16",
-		"bcrypt": "^5.1.1",
-		"bcryptjs": "^2.4.3",
 		"bits-ui": "^0.14.0",
 		"clsx": "^2.1.0",
 		"eslint": "^8.56.0",
 		"eslint-config-prettier": "^9.1.0",
 		"eslint-plugin-svelte": "^2.35.1",
 		"formsnap": "^0.4.2",
-		"jsonwebtoken": "^9.0.2",
-		"node-ssh": "^13.1.0",
-		"nodemailer": "^6.9.8",
 		"postcss": "^8.4.33",
 		"prettier": "^3.2.4",
 		"prettier-plugin-svelte": "^3.1.2",
-		"prisma": "^5.8.1",
 		"radix-icons-svelte": "^1.2.1",
 		"svelte": "^4.2.9",
 		"svelte-check": "^3.6.3",
@@ -56,13 +62,9 @@
 		"typescript": "^5.3.3",
 		"vite": "^5.0.12",
 		"vitest": "^1.2.0",
-		"zod": "^3.22.4",
-		"node-schedule": "^2.1.1"
+		"zod": "^3.22.4"
 	},
 	"type": "module",
-	"prisma": {
-		"seed": "tsx prisma/seed.ts"
-	},
 	"dependencies": {
 	}
 }

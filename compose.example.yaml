@@ -1,0 +1,39 @@
+name: traps-env
+services:
+  web:
+    networks:
+      - client-side
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - "3000:3000"
+  api:
+    build:
+      context: .
+      dockerfile: ./api/Dockerfile
+    networks:
+      - client-side
+      - server-side
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+  postgres:
+    image: postgres:14-alpine
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: PASS
+    networks:
+      - server-side
+    ports:
+      - 5432:5432
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+networks:
+  client-side: {}
+  server-side: {}
+
+volumes:
+  db-data: {}
